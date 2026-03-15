@@ -58,7 +58,7 @@ export default function OrdersManagementPage() {
         </Button>
       </div>
 
-      {/* Фильтры */}
+      {/* Filters */}
       <div className="flex flex-wrap gap-2">
         {[
           { value: 'active', label: `Active (${(orders || []).filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length})` },
@@ -77,7 +77,7 @@ export default function OrdersManagementPage() {
         ))}
       </div>
 
-      {/* Список заказов */}
+      {/* Orders list */}
       {filteredOrders.length === 0 ? (
         <Card className="p-8 text-center text-gray-500">No orders found</Card>
       ) : (
@@ -89,10 +89,10 @@ export default function OrdersManagementPage() {
 
             return (
               <Card key={order.id} className="overflow-hidden">
-                {/* Шапка заказа */}
+                {/* Order header */}
                 <div className="p-4">
                   <div className="flex flex-wrap items-start gap-3">
-                    {/* Основная инфо */}
+                    {/* Main info */}
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="font-bold text-gray-900">#{order.orderNumber}</span>
@@ -110,16 +110,16 @@ export default function OrdersManagementPage() {
                         {order.parkingSpot && <span>Parking: {order.parkingSpot}</span>}
                         <span className="flex items-center gap-1">
                           <Package className="h-3.5 w-3.5" />
-                          {order.items.length} позиц.
+                          {order.items.length} items
                         </span>
                       </div>
                     </div>
 
-                    {/* Сумма и кнопки */}
+                    {/* Total and actions */}
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span className="font-bold text-lg text-gray-900">{Number(order.totalAmount).toFixed(0)} ₽</span>
 
-                      {/* Кнопка следующего статуса */}
+                      {/* Next status button */}
                       {s.next && (
                         <Button
                           size="sm"
@@ -131,7 +131,7 @@ export default function OrdersManagementPage() {
                         </Button>
                       )}
 
-                      {/* Отменить (если не финальный статус) */}
+                      {/* Cancel (if not final status) */}
                       {order.status !== 'delivered' && order.status !== 'cancelled' && (
                         <Button
                           size="sm"
@@ -144,7 +144,7 @@ export default function OrdersManagementPage() {
                         </Button>
                       )}
 
-                      {/* Развернуть */}
+                      {/* Expand */}
                       <Button
                         size="sm"
                         variant="ghost"
@@ -157,10 +157,10 @@ export default function OrdersManagementPage() {
                   </div>
                 </div>
 
-                {/* Детали заказа */}
+                {/* Order details */}
                 {isExpanded && (
                   <div className="border-t bg-gray-50 p-4 space-y-4">
-                    {/* Состав */}
+                    {/* Items */}
                     <div>
                       <p className="text-sm font-semibold text-gray-700 mb-2">Order items:</p>
                       <div className="space-y-2">
@@ -180,7 +180,7 @@ export default function OrdersManagementPage() {
                       </div>
                     </div>
 
-                    {/* Смена статуса вручную */}
+                    {/* Manual status change */}
                     <div>
                       <p className="text-sm font-semibold text-gray-700 mb-2">Change status:</p>
                       <div className="flex flex-wrap gap-2">
@@ -204,7 +204,7 @@ export default function OrdersManagementPage() {
                       </div>
                     </div>
 
-                    {/* Фото авто */}
+                    {/* Car photo */}
                     {order.carPhotoUrl && (
                       <div>
                         <p className="text-sm font-semibold text-gray-700 mb-2">Car photo:</p>

@@ -77,20 +77,24 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
     if (zone) {
       // Editing existing zone
       setZoneType(zone.type);
-      
-      if (zone.type === 'circle' && typeof zone.coordinates === 'object' && 'center' in zone.coordinates) {
+
+      if (zone.type === 'circle') {
         reset({
           name: zone.name,
           type: 'circle',
-          center: zone.coordinates.center,
-          radius: zone.coordinates.radius,
+          center: {
+            latitude: zone.centerLat ?? 40.758,
+            longitude: zone.centerLng ?? -73.9855,
+          },
+          radius: zone.radiusMeters ?? 1000,
           active: zone.active,
         });
-      } else if (zone.type === 'polygon' && Array.isArray(zone.coordinates)) {
+      } else if (zone.type === 'polygon') {
+        const coords = Array.isArray(zone.polygonCoordinates) ? zone.polygonCoordinates : [];
         reset({
           name: zone.name,
           type: 'polygon',
-          coordinates: zone.coordinates,
+          coordinates: coords,
           active: zone.active,
         });
       }

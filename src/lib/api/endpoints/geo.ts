@@ -3,11 +3,19 @@ import { Location, GeoCheckResponse, ServiceZone } from '@/types/geo';
 
 export const geoApi = {
   checkLocation: async (location: Location): Promise<GeoCheckResponse> => {
-    // Transform latitude/longitude to lat/lng for backend
-    const { data } = await apiClient.post('/geo/check', {
+    const { data } = await apiClient.post<{ inZone?: boolean; inServiceZone?: boolean; zoneName?: string; message?: string }>('/geo/check', {
       lat: location.latitude,
       lng: location.longitude,
     });
+    return {
+      inServiceZone: data?.inZone ?? data?.inServiceZone ?? false,
+      zoneName: data?.zoneName,
+      message: data?.message,
+    };
+  },
+
+  getPublicServiceZones: async (): Promise<ServiceZone[]> => {
+    const { data } = await apiClient.get('/geo/zones');
     return data;
   },
 

@@ -25,7 +25,7 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 flex items-center justify-center px-4">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <div className="flex justify-center mb-4">
@@ -34,7 +34,7 @@ export default function CartPage() {
             <CardTitle className="text-2xl">Your cart is empty</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-gray-700 mb-6">
               Add some delicious items from our menu to get started!
             </p>
             <Link href="/menu">
@@ -49,27 +49,27 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
       <header className="bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/menu">
             <Button variant="ghost" className="text-white hover:bg-white/20 font-bold text-xl px-0 gap-2">
-              ← Меню
+              ← Menu
             </Button>
           </Link>
-          <h1 className="text-xl font-bold text-white">Корзина</h1>
+          <h1 className="text-xl font-bold text-white">Cart</h1>
           {user ? (
             <Link href="/profile">
               <Button variant="outline" className="min-h-[48px] min-w-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2">
                 <User className="h-5 w-5 text-orange-600" />
-                <span className="hidden sm:inline text-orange-600 font-semibold text-sm">{user.name || 'Кабинет'}</span>
+                <span className="hidden sm:inline text-orange-600 font-semibold text-sm">{user.name || 'Profile'}</span>
               </Button>
             </Link>
           ) : (
             <Link href="/login">
               <Button variant="outline" className="min-h-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2">
                 <LogIn className="h-5 w-5 text-orange-600" />
-                <span className="hidden sm:inline text-orange-600 font-semibold text-sm">Войти</span>
+                <span className="hidden sm:inline text-orange-600 font-semibold text-sm">Login</span>
               </Button>
             </Link>
           )}
@@ -166,15 +166,15 @@ export default function CartPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
+                  <span className="text-gray-700">Subtotal</span>
                   <span className="font-medium">${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Tax (8%)</span>
+                  <span className="text-gray-700">Tax (8%)</span>
                   <span className="font-medium">${tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Delivery Fee</span>
+                  <span className="text-gray-700">Delivery Fee</span>
                   <span className="font-medium">${deliveryFee.toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-4">

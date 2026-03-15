@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useServiceZones, useDeleteServiceZone } from '@/lib/hooks/use-geo';
 import { ServiceZone } from '@/types/geo';
 import { Button } from '@/components/ui/button';
@@ -8,14 +9,38 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Plus, Edit, Trash2 } from 'lucide-react';
-import { ServiceZoneForm } from '@/components/features/service-zone-form';
 import { toast } from '@/components/ui/toast';
 
+const ServiceZoneForm = dynamic(
+  () => import('@/components/features/service-zone-form').then((mod) => mod.ServiceZoneForm),
+  { ssr: false, loading: () => <div className="h-0 overflow-hidden" /> }
+);
+
+// Normalize zone from API (may return snake_case from DB)
+function normalizeZone(z: Record<string, unknown>): ServiceZone {
+  return {
+    id: String(z.id),
+    name: String(z.name),
+    type: (z.type as 'circle' | 'polygon') || 'circle',
+    active: Boolean(z.active),
+    centerLat: z.centerLat != null ? Number(z.centerLat) : (z.center_lat != null ? Number(z.center_lat) : undefined),
+    centerLng: z.centerLng != null ? Number(z.centerLng) : (z.center_lng != null ? Number(z.center_lng) : undefined),
+    radiusMeters: z.radiusMeters != null ? Number(z.radiusMeters) : (z.radius_meters != null ? Number(z.radius_meters) : undefined),
+    polygonCoordinates: z.polygonCoordinates ?? z.polygon_coordinates,
+  };
+}
+
 export default function ServiceZonesPage() {
-  const { data: zones, isLoading } = useServiceZones();
+  const { data: zonesData, isLoading, error: zonesError } = useServiceZones();
   const deleteZone = useDeleteServiceZone();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<ServiceZone | null>(null);
+
+  const zones = Array.isArray(zonesData)
+    ? zonesData
+        .map((z) => (typeof z === 'object' && z !== null ? normalizeZone(z as unknown as Record<string, unknown>) : null))
+        .filter((z): z is ServiceZone => z !== null)
+    : [];
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this service zone?')) {
@@ -28,10 +53,13 @@ export default function ServiceZonesPage() {
         title: 'Success',
         description: 'Service zone deleted successfully',
       });
-    } catch {
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Failed to delete service zone. It may have existing orders — deactivate the zone instead.';
       toast({
-        title: 'Error',
-        description: 'Failed to delete service zone',
+        title: 'Cannot delete zone',
+        description: message,
         variant: 'destructive',
       });
     }
@@ -54,8 +82,24 @@ export default function ServiceZonesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (zonesError) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="border-2 border-amber-200 bg-amber-50/80">
+          <CardContent className="py-8 text-center">
+            <p className="text-amber-800 font-medium mb-2">Could not load service zones</p>
+            <p className="text-sm text-amber-700 mb-4">Check your connection and try again.</p>
+            <Button variant="outline" className="border-amber-400 text-amber-800" onClick={() => window.location.reload()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -71,7 +115,7 @@ export default function ServiceZonesPage() {
       </div>
 
       <div className="grid gap-4">
-        {zones && zones.length > 0 ? (
+        {zones.length > 0 ? (
           zones.map((zone) => (
             <Card key={zone.id}>
               <CardHeader>
@@ -107,21 +151,14 @@ export default function ServiceZonesPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                {zone.type === 'circle' && typeof zone.coordinates === 'object' && 'center' in zone.coordinates ? (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <p>
-                      Center: {zone.coordinates.center.latitude.toFixed(6)},{' '}
-                      {zone.coordinates.center.longitude.toFixed(6)}
-                    </p>
-                    <p>Radius: {zone.coordinates.radius} meters</p>
+                {zone.type === 'circle' && zone.centerLat != null && zone.centerLng != null ? (
+                  <div className="text-sm text-gray-600">
+                    <p>Center: {Number(zone.centerLat).toFixed(6)}, {Number(zone.centerLng).toFixed(6)}</p>
+                    <p>Radius: {Number(zone.radiusMeters ?? 0)} meters</p>
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <p>
-                      {Array.isArray(zone.coordinates)
-                        ? `${zone.coordinates.length} coordinate points`
-                        : 'Invalid coordinates'}
-                    </p>
+                  <div className="text-sm text-gray-600">
+                    <p>Polygon zone</p>
                   </div>
                 )}
               </CardContent>

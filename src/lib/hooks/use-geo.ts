@@ -24,6 +24,14 @@ export function useServiceZones() {
   });
 }
 
+export function usePublicServiceZones() {
+  return useQuery({
+    queryKey: ['publicServiceZones'],
+    queryFn: () => geoApi.getPublicServiceZones(),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 export function useCreateServiceZone() {
   const queryClient = useQueryClient();
 

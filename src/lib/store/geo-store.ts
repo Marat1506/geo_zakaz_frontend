@@ -35,6 +35,7 @@ export const useGeoStore = create<GeoState>()(
     }),
     {
       name: 'geo-storage',
+      skipHydration: true,
     },
   ),
 );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useMenu } from '@/lib/hooks/use-menu';
 import { useCartStore } from '@/lib/store/cart-store';
 import { useAuthStore } from '@/lib/store/auth-store';
@@ -8,11 +8,14 @@ import { MenuItem } from '@/types/menu';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, Plus, Clock, Lock, User, LogIn } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ShoppingCart, Plus, Clock, Lock, User, LogIn, Search, SlidersHorizontal } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getImageUrl } from '@/lib/utils/image';
+
+type SortOption = 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'prep-asc' | 'prep-desc';
 
 export default function MenuPage() {
   const { data: categories, isLoading, error } = useMenu();
@@ -20,12 +23,52 @@ export default function MenuPage() {
   const { user } = useAuthStore();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('name-asc');
 
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
+  const safeCategories = Array.isArray(categories) ? categories : [];
+  const allCategories = ['all', ...safeCategories.map(cat => (cat && cat.name) ? cat.name : '')].filter(Boolean);
+  const rawCategoryItems = selectedCategory === 'all'
+    ? safeCategories.flatMap(cat => (Array.isArray(cat?.items) ? cat.items : []))
+    : (safeCategories.find(cat => cat?.name === selectedCategory)?.items ?? []);
+
+  const filteredItems = useMemo(() => {
+    const safeItems = rawCategoryItems.map((item: unknown) => {
+      const i = item as Record<string, unknown>;
+      return {
+        ...i,
+        id: String(i?.id ?? ''),
+        name: typeof i?.name === 'string' ? i.name : String(i?.name ?? ''),
+        description: typeof i?.description === 'string' ? i.description : String(i?.description ?? ''),
+        price: Number(i?.price) || 0,
+        preparationTime: Number(i?.preparationTime) || 0,
+        category: typeof i?.category === 'string' ? i.category : String(i?.category ?? ''),
+        available: Boolean(i?.available !== false),
+        readyNow: Boolean(i?.readyNow),
+        imageUrl: i?.imageUrl != null ? String(i.imageUrl) : undefined,
+      } as MenuItem;
+    });
+    const q = searchQuery.trim().toLowerCase();
+    let list = q
+      ? safeItems.filter((item) =>
+          item.name.toLowerCase().includes(q) || item.description.toLowerCase().includes(q)
+        )
+      : safeItems;
+    const opt = sortBy;
+    if (opt === 'name-asc') list = [...list].sort((a, b) => a.name.localeCompare(b.name));
+    else if (opt === 'name-desc') list = [...list].sort((a, b) => b.name.localeCompare(a.name));
+    else if (opt === 'price-asc') list = [...list].sort((a, b) => a.price - b.price);
+    else if (opt === 'price-desc') list = [...list].sort((a, b) => b.price - a.price);
+    else if (opt === 'prep-asc') list = [...list].sort((a, b) => a.preparationTime - b.preparationTime);
+    else if (opt === 'prep-desc') list = [...list].sort((a, b) => b.preparationTime - a.preparationTime);
+    return list;
+  }, [rawCategoryItems, searchQuery, sortBy]);
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
         <LoadingSpinner />
       </div>
     );
@@ -33,7 +76,7 @@ export default function MenuPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
         <div className="text-center">
           <p className="text-red-500 mb-4">Failed to load menu</p>
           <Button onClick={() => window.location.reload()}>Retry</Button>
@@ -41,11 +84,6 @@ export default function MenuPage() {
       </div>
     );
   }
-
-  const allCategories = ['all', ...(categories?.map(cat => cat.name) || [])];
-  const filteredItems = selectedCategory === 'all'
-    ? categories?.flatMap(cat => cat.items) || []
-    : categories?.find(cat => cat.name === selectedCategory)?.items || [];
 
   const handleAddToCart = (item: MenuItem) => {
     if (!user) {
@@ -59,31 +97,31 @@ export default function MenuPage() {
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
       <header className="bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">🍔 Меню</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white drop-shadow-lg">🍔 Menu</h1>
           <div className="flex items-center gap-2">
             {user ? (
               <Link href="/profile">
-                <Button variant="outline" className="min-h-[48px] min-w-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2" aria-label="Личный кабинет">
+                <Button variant="outline" className="min-h-[48px] min-w-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2" aria-label="Profile">
                   <User className="h-5 w-5 text-orange-600" />
-                  <span className="hidden sm:inline text-orange-600 font-semibold text-sm">{user.name || 'Кабинет'}</span>
+                  <span className="hidden sm:inline text-orange-600 font-semibold text-sm">{user.name || 'Profile'}</span>
                 </Button>
               </Link>
             ) : (
               <Link href="/login">
-                <Button variant="outline" className="min-h-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2" aria-label="Войти">
+                <Button variant="outline" className="min-h-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2" aria-label="Login">
                   <LogIn className="h-5 w-5 text-orange-600" />
-                  <span className="hidden sm:inline text-orange-600 font-semibold text-sm">Войти</span>
+                  <span className="hidden sm:inline text-orange-600 font-semibold text-sm">Login</span>
                 </Button>
               </Link>
             )}
             <Link href="/cart">
-              <Button variant="outline" className="relative min-h-[48px] min-w-[48px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label={`Корзина: ${cartItemCount} товаров`}>
+              <Button variant="outline" className="relative min-h-[48px] min-w-[48px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label={`Cart: ${cartItemCount} items`}>
                 <ShoppingCart className="h-6 w-6 text-orange-600" aria-hidden="true" />
                 {cartItemCount > 0 && (
-                  <Badge
-                    className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 bg-red-500 text-white font-bold text-xs"
-                    aria-label={`${cartItemCount} товаров в корзине`}
-                  >
+                    <Badge
+                      className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 bg-red-500 text-white font-bold text-xs"
+                      aria-label={`${cartItemCount} items in cart`}
+                    >
                     {cartItemCount}
                   </Badge>
                 )}
@@ -93,8 +131,41 @@ export default function MenuPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 px-4" role="tablist" aria-label="Menu categories">
+      <div className="container mx-auto px-4 py-6 md:py-8">
+        {/* Search and sort */}
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="search"
+                placeholder="Search by name or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-11 bg-white border-orange-200 focus:border-orange-500 rounded-lg"
+                aria-label="Search menu"
+              />
+            </div>
+            <div className="flex items-center gap-2 min-w-0">
+              <SlidersHorizontal className="h-4 w-4 text-orange-600 shrink-0" aria-hidden />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="h-11 px-3 rounded-lg border border-orange-200 bg-white text-gray-800 focus:border-orange-500 focus:outline-none text-sm w-full sm:w-auto"
+                aria-label="Sort by"
+              >
+                <option value="name-asc">Name A–Z</option>
+                <option value="name-desc">Name Z–A</option>
+                <option value="price-asc">Price: low to high</option>
+                <option value="price-desc">Price: high to low</option>
+                <option value="prep-asc">Prep time: shortest</option>
+                <option value="prep-desc">Prep time: longest</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2" role="tablist" aria-label="Menu categories">
           {allCategories.map(category => (
             <Button
               key={category}

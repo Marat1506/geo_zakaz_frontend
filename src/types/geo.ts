@@ -12,7 +12,12 @@ export interface GeoCheckResponse {
 export interface ServiceZone {
   id: string;
   name: string;
-  type: "circle" | "polygon";
-  coordinates: Location[] | { center: Location; radius: number };
+  type: 'circle' | 'polygon';
+  // For circle zones
+  centerLat?: number;
+  centerLng?: number;
+  radiusMeters?: number;
+  // For polygon zones
+  polygonCoordinates?: any;
   active: boolean;
 }

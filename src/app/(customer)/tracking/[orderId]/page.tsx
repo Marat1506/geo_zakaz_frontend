@@ -7,11 +7,11 @@ import { CheckCircle, Clock, Package, Truck, MapPin, Loader2, XCircle, ArrowLeft
 import Link from 'next/link';
 
 const statusConfig: Record<string, { label: string; icon: any; color: string; ring: string }> = {
-  pending_payment: { label: 'Ожидает оплаты', icon: Clock, color: 'bg-yellow-400', ring: 'ring-yellow-300' },
-  preparing: { label: 'Готовится', icon: Package, color: 'bg-orange-500', ring: 'ring-orange-300' },
-  on_the_way: { label: 'В пути', icon: Truck, color: 'bg-blue-500', ring: 'ring-blue-300' },
-  delivered: { label: 'Доставлен', icon: CheckCircle, color: 'bg-green-500', ring: 'ring-green-300' },
-  cancelled: { label: 'Отменён', icon: XCircle, color: 'bg-red-500', ring: 'ring-red-300' },
+  pending_payment: { label: 'Awaiting payment', icon: Clock, color: 'bg-yellow-400', ring: 'ring-yellow-300' },
+  preparing: { label: 'Preparing', icon: Package, color: 'bg-orange-500', ring: 'ring-orange-300' },
+  on_the_way: { label: 'On the way', icon: Truck, color: 'bg-blue-500', ring: 'ring-blue-300' },
+  delivered: { label: 'Delivered', icon: CheckCircle, color: 'bg-green-500', ring: 'ring-green-300' },
+  cancelled: { label: 'Cancelled', icon: XCircle, color: 'bg-red-500', ring: 'ring-red-300' },
 };
 
 const statusOrder = ['pending_payment', 'preparing', 'on_the_way', 'delivered'];
@@ -24,7 +24,7 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-orange-50">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-orange-500 mx-auto" />
-          <p className="mt-4 text-gray-600">Загружаем заказ...</p>
+          <p className="mt-4 text-gray-600">Loading your order...</p>
         </div>
       </div>
     );
@@ -35,13 +35,13 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-orange-50 px-4">
         <Card className="max-w-md w-full text-center shadow-xl border-2 border-orange-200">
           <CardHeader>
-            <CardTitle className="text-red-600">Заказ не найден</CardTitle>
+            <CardTitle className="text-red-600">Order not found</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600 mb-6">Не удалось найти этот заказ.</p>
+            <p className="text-gray-600 mb-6">We could not find this order.</p>
             <Link href="/profile">
               <Button className="w-full bg-orange-500 hover:bg-orange-600 min-h-[48px]">
-                В личный кабинет
+                Go to profile
               </Button>
             </Link>
           </CardContent>
@@ -59,12 +59,12 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 py-6 px-4">
       <div className="container mx-auto max-w-2xl space-y-4">
 
-        {/* Шапка */}
+        {/* Header */}
         <div className="flex items-center justify-between">
           <Link href="/profile">
             <Button variant="ghost" className="text-orange-600 hover:bg-orange-100 pl-0">
               <ArrowLeft className="h-5 w-5 mr-1" />
-              Назад
+              Back
             </Button>
           </Link>
           <Button
@@ -75,11 +75,11 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
             className="text-gray-500 hover:text-orange-600"
           >
             <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
-            Обновить
+            Refresh
           </Button>
         </div>
 
-        {/* Статус заказа — главная карточка */}
+        {/* Main order status card */}
         <Card className="shadow-xl border-2 border-orange-200 overflow-hidden">
           <div className={`${statusInfo.color} p-6 text-white`}>
             <div className="flex items-center gap-4">
@@ -87,20 +87,20 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
                 <StatusIcon className="h-9 w-9 text-white" />
               </div>
               <div>
-                <p className="text-white/80 text-sm">Статус заказа</p>
+                <p className="text-white/80 text-sm">Order status</p>
                 <p className="text-2xl font-bold">{statusInfo.label}</p>
                 <p className="text-white/80 text-sm mt-1">#{order.orderNumber}</p>
               </div>
             </div>
             {order.estimatedTime && !isCancelled && order.status !== 'delivered' && (
               <div className="mt-4 bg-white/20 rounded-lg px-4 py-2 inline-block">
-                <p className="text-sm font-semibold">⏱ Примерное время: ~{order.estimatedTime} мин</p>
+                <p className="text-sm font-semibold">⏱ Estimated time: ~{order.estimatedTime} min</p>
               </div>
             )}
           </div>
         </Card>
 
-        {/* Прогресс */}
+        {/* Progress */}
         {!isCancelled && (
           <Card className="shadow-lg border-2 border-orange-100">
             <CardContent className="pt-5 pb-4">
@@ -128,7 +128,7 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
                   );
                 })}
               </div>
-              {/* Линия прогресса */}
+              {/* Progress line */}
               <div className="relative mt-2 mx-5">
                 <div className="h-1 bg-gray-200 rounded-full" />
                 <div
@@ -140,27 +140,27 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
           </Card>
         )}
 
-        {/* Информация об авто */}
+        {/* Car information */}
         <Card className="shadow-lg border-2 border-orange-100">
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2 text-gray-700">
               <MapPin className="h-5 w-5 text-orange-400" />
-              Информация об автомобиле
+              Car information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            <p className="text-gray-700"><span className="text-gray-500">Номер:</span> <span className="font-semibold">{order.carPlateNumber}</span></p>
-            <p className="text-gray-700"><span className="text-gray-500">Цвет:</span> <span className="font-semibold">{order.carColor}</span></p>
+            <p className="text-gray-700"><span className="text-gray-500">Plate:</span> <span className="font-semibold">{order.carPlateNumber}</span></p>
+            <p className="text-gray-700"><span className="text-gray-500">Color:</span> <span className="font-semibold">{order.carColor}</span></p>
             {order.parkingSpot && (
-              <p className="text-gray-700"><span className="text-gray-500">Парковка:</span> <span className="font-semibold">{order.parkingSpot}</span></p>
+              <p className="text-gray-700"><span className="text-gray-500">Parking:</span> <span className="font-semibold">{order.parkingSpot}</span></p>
             )}
           </CardContent>
         </Card>
 
-        {/* Состав заказа */}
+        {/* Order items */}
         <Card className="shadow-lg border-2 border-orange-100">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base text-gray-700">Состав заказа</CardTitle>
+            <CardTitle className="text-base text-gray-700">Order items</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -183,22 +183,22 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
               ))}
             </div>
             <div className="mt-4 pt-3 border-t flex justify-between items-center">
-              <span className="text-lg font-bold text-gray-800">Итого</span>
+              <span className="text-lg font-bold text-gray-800">Total</span>
               <span className="text-xl font-bold text-orange-600">{Number(order.totalAmount).toFixed(0)} ₽</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Кнопки */}
+        {/* Actions */}
         <div className="flex gap-3 pb-4">
           <Link href="/profile" className="flex-1">
             <Button variant="outline" className="w-full min-h-[48px] border-orange-300 text-orange-600">
-              Мои заказы
+              My orders
             </Button>
           </Link>
           <Link href="/menu" className="flex-1">
             <Button className="w-full min-h-[48px] bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
-              Заказать ещё
+              Order more
             </Button>
           </Link>
         </div>

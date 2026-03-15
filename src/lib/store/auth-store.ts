@@ -19,20 +19,24 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       setAuth: (user, tokens) => {
-        localStorage.setItem('accessToken', tokens.accessToken);
-        localStorage.setItem('refreshToken', tokens.refreshToken);
-        document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=3600; SameSite=Lax`;
-        document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
-        document.cookie = `userRole=${user.role}; path=/; max-age=3600; SameSite=Lax`;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('accessToken', tokens.accessToken);
+          localStorage.setItem('refreshToken', tokens.refreshToken);
+          document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=3600; SameSite=Lax`;
+          document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax`;
+          document.cookie = `userRole=${user.role}; path=/; max-age=3600; SameSite=Lax`;
+        }
         set({ user, tokens, isAuthenticated: true });
       },
 
       clearAuth: () => {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        document.cookie = 'accessToken=; path=/; max-age=0';
-        document.cookie = 'refreshToken=; path=/; max-age=0';
-        document.cookie = 'userRole=; path=/; max-age=0';
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          document.cookie = 'accessToken=; path=/; max-age=0';
+          document.cookie = 'refreshToken=; path=/; max-age=0';
+          document.cookie = 'userRole=; path=/; max-age=0';
+        }
         set({ user: null, tokens: null, isAuthenticated: false });
       },
 
@@ -43,6 +47,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      skipHydration: true,
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

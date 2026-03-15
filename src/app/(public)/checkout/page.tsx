@@ -8,9 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, ShoppingBag, Camera, User } from 'lucide-react';
+import { Loader2, ShoppingBag, Camera, User, MapPin, AlertCircle } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { useCheckLocation, usePublicServiceZones } from '@/lib/hooks/use-geo';
+import { useGeoStore } from '@/lib/store/geo-store';
+import { toast } from '@/components/ui/toast';
+
+const DeliveryZoneMap = dynamic(
+  () => import('@/components/map/delivery-zone-map').then((mod) => mod.DeliveryZoneMap),
+  { ssr: false, loading: () => <div className="w-full h-[260px] bg-gray-100 rounded-lg flex items-center justify-center"><p className="text-gray-500">Loading map...</p></div> }
+);
 
 const CAR_COLORS = [
   'Red', 'Blue', 'White', 'Black', 'Silver', 'Gray', 'Green', 'Yellow', 'Orange', 'Brown', 'Other'
@@ -24,6 +33,10 @@ export default function CheckoutPage() {
   const [carPhoto, setCarPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userLocation, inServiceZone, zoneName } = useGeoStore();
+  const checkLocation = useCheckLocation();
+  const { data: serviceZones = [], isLoading: zonesLoading, isError: zonesError } = usePublicServiceZones();
+  const [geoError, setGeoError] = useState<string | null>(null);
 
   const {
     register,
@@ -41,6 +54,33 @@ export default function CheckoutPage() {
     }
   }, [items.length, user, router]);
 
+  useEffect(() => {
+    if (userLocation || checkLocation.isPending) return;
+
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation is not supported in this browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const coords = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setGeoError(null);
+        checkLocation.mutate(coords);
+      },
+      () => {
+        setGeoError('We could not detect your location. You can still place an order, but delivery availability may be limited.');
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+      },
+    );
+  }, [userLocation, checkLocation]);
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -55,7 +95,11 @@ export default function CheckoutPage() {
 
   const onSubmit = async (data: any) => {
     if (!carPhoto) {
-      alert('Please take a photo of your car');
+      toast({
+        title: 'Car photo required',
+        description: 'Please take a photo of your car to continue.',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -78,9 +122,14 @@ export default function CheckoutPage() {
         formData.append('parkingSpot', data.parkingSpot);
       }
       
-      // Add location (using Main Parking Lot zone coordinates)
-      formData.append('customerLat', '40.7128');
-      formData.append('customerLng', '-74.0060');
+      // Add location: prefer detected user location, fall back to main parking lot
+      if (userLocation) {
+        formData.append('customerLat', String(userLocation.latitude));
+        formData.append('customerLng', String(userLocation.longitude));
+      } else {
+        formData.append('customerLat', '40.7128');
+        formData.append('customerLng', '-74.0060');
+      }
       
       // Add payment method
       formData.append('paymentMethod', 'cash');
@@ -99,9 +148,14 @@ export default function CheckoutPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Order creation failed:', errorData);
-        throw new Error(errorData.message || 'Failed to create order');
+        let message = 'Failed to place order. Please try again.';
+        try {
+          const errorData = await response.json();
+          if (errorData?.message) message = errorData.message;
+        } catch {
+          // non-JSON response
+        }
+        throw new Error(message);
       }
 
       const order = await response.json();
@@ -113,7 +167,12 @@ export default function CheckoutPage() {
       router.push(`/order-success?orderId=${order.id}`);
     } catch (error) {
       console.error('Order error:', error);
-      alert('Failed to place order. Please try again.');
+      const message = error instanceof Error ? error.message : 'Something went wrong.';
+      toast({
+        title: 'Order failed',
+        description: message || 'Failed to place order. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -124,10 +183,77 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 py-8 px-4">
       <div className="container mx-auto max-w-4xl">
-        <h1 className="text-4xl font-bold text-orange-600 mb-8 text-center">Checkout</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-orange-600 mb-4 md:mb-8 text-center">
+          Checkout
+        </h1>
+
+        <Card className="mb-6 border-2 border-orange-200 bg-white/80">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg text-gray-800">
+              <MapPin className="h-5 w-5 text-orange-500" />
+              Delivery zone
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="w-full">
+              <DeliveryZoneMap
+                zones={serviceZones
+                  .filter((z) => z.centerLat != null && z.centerLng != null && z.radiusMeters != null)
+                  .map((z) => ({
+                    id: z.id,
+                    name: z.name,
+                    centerLat: z.centerLat as number,
+                    centerLng: z.centerLng as number,
+                    radiusMeters: z.radiusMeters as number,
+                  }))}
+                userLocation={
+                  userLocation
+                    ? { lat: userLocation.latitude, lng: userLocation.longitude }
+                    : undefined
+                }
+                height="260px"
+              />
+            </div>
+            <div className="flex flex-col gap-2 text-sm">
+              {checkLocation.isPending && (
+                <p className="flex items-center gap-2 text-gray-600">
+                  <Loader2 className="h-4 w-4 animate-spin text-orange-500" />
+                  Checking your position relative to our delivery zone...
+                </p>
+              )}
+              {geoError && (
+                <p className="flex items-center gap-2 text-amber-700">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  {geoError}
+                </p>
+              )}
+              {!geoError && !checkLocation.isPending && userLocation && (
+                <p
+                  className={`flex items-center gap-2 ${
+                    inServiceZone ? 'text-emerald-700' : 'text-red-600'
+                  }`}
+                >
+                  <AlertCircle
+                    className={`h-4 w-4 ${
+                      inServiceZone ? 'text-emerald-500' : 'text-red-500'
+                    }`}
+                  />
+                  {inServiceZone
+                    ? `You are inside our delivery zone${zoneName ? ` (“${zoneName}”)` : ''}.`
+                    : 'You are currently outside our delivery zone. You can still place an order for pickup.'}
+                </p>
+              )}
+              {zonesError && (
+                <p className="text-xs text-gray-500">
+                  We could not load the delivery zone map right now. You can still complete your order.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* User Info */}
-        <Card className="mb-6 border-2 border-green-200 bg-green-50">
+        <Card className="mb-6 border-2 border-emerald-200 bg-emerald-50">
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
               <User className="h-12 w-12 text-green-600" />

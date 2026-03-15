@@ -43,7 +43,8 @@ export const authApi = {
   },
 
   logout: async (): Promise<void> => {
-    await apiClient.post('/auth/logout');
+    // No server-side logout endpoint — just clear local state
+    return Promise.resolve();
   },
 
   getCurrentUser: async (): Promise<User> => {

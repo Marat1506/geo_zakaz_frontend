@@ -80,9 +80,9 @@ function ToastComponent({ id, title, description, variant = "default" }: ToastCo
   const { removeToast } = useToast()
 
   const variantStyles = {
-    default: "border bg-white text-gray-950",
-    destructive: "destructive group border-red-600 bg-red-600 text-white",
-    success: "border-green-500 bg-green-50 text-green-900 dark:bg-green-900 dark:text-green-50",
+    default: "border border-orange-200 bg-white text-gray-900 shadow-lg",
+    destructive: "border-amber-300 bg-amber-50 text-amber-900 shadow-lg group",
+    success: "border-emerald-300 bg-emerald-50 text-emerald-900 shadow-lg",
   }
 
   return (
