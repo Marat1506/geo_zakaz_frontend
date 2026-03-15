@@ -20,7 +20,7 @@ function OrderSuccessContent() {
       return;
     }
 
-    fetch(`http://localhost:3000/api/orders/${orderId}`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/orders/${orderId}`)
       .then(res => res.json())
       .then(data => {
         setOrder(data);

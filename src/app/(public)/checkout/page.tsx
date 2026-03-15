@@ -93,7 +93,7 @@ export default function CheckoutPage() {
       // Add car photo
       formData.append('carPhoto', carPhoto);
 
-      const response = await fetch('http://localhost:3000/api/orders', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/orders`, {
         method: 'POST',
         body: formData,
       });
