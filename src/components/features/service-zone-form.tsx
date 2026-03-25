@@ -292,7 +292,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
                 <input
                   type="range"
                   min={100}
-                  max={50000}
+                  max={5000}
                   step={100}
                   value={watch('radius') || 1000}
                   onChange={(e) => setValue('radius', Number(e.target.value), { shouldValidate: true })}
