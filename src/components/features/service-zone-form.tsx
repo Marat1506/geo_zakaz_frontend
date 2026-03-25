@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 
 // Dynamic import to avoid SSR issues with Leaflet
 const ZonePickerMap = dynamic(
@@ -39,6 +39,8 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
   const createZone = useCreateServiceZone();
   const updateZone = useUpdateServiceZone();
   const [zoneType, setZoneType] = useState<'circle' | 'polygon'>('circle');
+  const [locating, setLocating] = useState(false);
+  const [geoCenter, setGeoCenter] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const {
     register,
@@ -53,7 +55,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
     defaultValues: {
       name: '',
       type: 'circle',
-      center: { latitude: 40.758, longitude: -73.9855 }, // Times Square default
+      center: { latitude: 47.2200, longitude: 39.7077 }, // Rostov-na-Donu
       radius: 1000,
       active: true,
     },
@@ -99,13 +101,32 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
         });
       }
     } else {
-      // Creating new zone
+      // Creating new zone — try to get user location
       reset({
         name: '',
         type: 'circle',
+        center: { latitude: 47.2200, longitude: 39.7077 },
+        radius: 1000,
         active: true,
       });
       setZoneType('circle');
+      setGeoCenter(null);
+
+      if (navigator.geolocation) {
+        setLocating(true);
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            setValue('center.latitude', lat);
+            setValue('center.longitude', lng);
+            setGeoCenter({ latitude: lat, longitude: lng });
+            setLocating(false);
+          },
+          () => setLocating(false),
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      }
     }
   }, [zone, reset]);
 
@@ -203,13 +224,22 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
           {zoneType === 'circle' ? (
             <>
               <div>
-                <Label>Select Zone Center on Map</Label>
+                <div className="flex items-center justify-between mb-1">
+                  <Label>Select Zone Center on Map</Label>
+                  {locating && (
+                    <span className="flex items-center gap-1 text-xs text-orange-500">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Detecting location...
+                    </span>
+                  )}
+                </div>
                 <ZonePickerMap
-                  center={watch('center')}
+                  center={geoCenter ?? watch('center')}
                   radius={watch('radius') || 1000}
                   onLocationSelect={(lat, lng) => {
                     setValue('center.latitude', lat);
                     setValue('center.longitude', lng);
+                    setGeoCenter(null);
                   }}
                 />
               </div>
@@ -258,13 +288,23 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
               </div>
 
               <div>
-                <Label htmlFor="radius">Radius (meters)</Label>
+                <Label htmlFor="radius">Radius (meters): {watch('radius') || 1000}m</Label>
+                <input
+                  type="range"
+                  min={100}
+                  max={50000}
+                  step={100}
+                  value={watch('radius') || 1000}
+                  onChange={(e) => setValue('radius', Number(e.target.value), { shouldValidate: true })}
+                  className="w-full accent-orange-500 mt-1"
+                />
                 <Input
                   id="radius"
                   type="number"
                   step="any"
                   {...register('radius', { valueAsNumber: true })}
                   placeholder="Enter radius in meters"
+                  className="mt-2"
                 />
                 {(() => {
                   const radiusError = (errors as Record<string, { message?: string }>).radius?.message;

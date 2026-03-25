@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { LayoutDashboard, MapPin, UtensilsCrossed, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, MapPin, UtensilsCrossed, LogOut, Menu, X, Tag } from 'lucide-react';
 import { useLogout } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
@@ -12,6 +12,7 @@ import { useAuthStore } from '@/lib/store/auth-store';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/menu-management', label: 'Menu', icon: UtensilsCrossed },
+  { href: '/categories', label: 'Categories', icon: Tag },
   { href: '/zones', label: 'Service Zones', icon: MapPin },
 ];
 

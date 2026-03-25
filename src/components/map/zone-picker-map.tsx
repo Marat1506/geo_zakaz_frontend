@@ -36,11 +36,11 @@ export function ZonePickerMap({
   useEffect(() => {
     if (!isClient) return;
 
-    const initialCenter: [number, number] = center && !isNaN(center.latitude) && !isNaN(center.longitude)
+    const initialCenter: [number, number] = center && !isNaN(center.latitude) && !isNaN(center.longitude) && (center.latitude !== 0 || center.longitude !== 0)
       ? [center.latitude, center.longitude]
-      : [40.7580, -73.9855]; // Default to Times Square
+      : [47.2200, 39.7077]; // Rostov-na-Donu fallback
 
-    // Initialize map
+    // Initialize map only once
     if (!mapRef.current) {
       const map = L.map('zone-picker-map').setView(initialCenter, 13);
 
@@ -51,19 +51,16 @@ export function ZonePickerMap({
 
       mapRef.current = map;
 
-      // Add click handler to map
       map.on('click', (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
         onLocationSelect(lat, lng);
 
-        // Update or create marker
         if (markerRef.current) {
           markerRef.current.setLatLng([lat, lng]);
         } else {
           markerRef.current = L.marker([lat, lng]).addTo(map);
         }
 
-        // Update or create circle
         if (circleRef.current) {
           circleRef.current.setLatLng([lat, lng]);
         } else {
@@ -77,8 +74,22 @@ export function ZonePickerMap({
       });
     }
 
-    // Update marker and circle when center or radius changes
-    if (center && !isNaN(center.latitude) && !isNaN(center.longitude) && mapRef.current) {
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
+        circleRef.current = null;
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isClient]);
+
+  // Update marker/circle when center or radius changes (without reinitializing map)
+  useEffect(() => {
+    if (!isClient || !mapRef.current) return;
+
+    if (center && !isNaN(center.latitude) && !isNaN(center.longitude) && (center.latitude !== 0 || center.longitude !== 0)) {
       const latLng: [number, number] = [center.latitude, center.longitude];
 
       if (markerRef.current) {
@@ -99,18 +110,11 @@ export function ZonePickerMap({
         }).addTo(mapRef.current);
       }
 
-      mapRef.current.setView(latLng, 13);
+      mapRef.current.flyTo(latLng, 14, { animate: true, duration: 1 });
+    } else if (circleRef.current) {
+      circleRef.current.setRadius(radius);
     }
-
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        markerRef.current = null;
-        circleRef.current = null;
-      }
-    };
-  }, [isClient, center, radius, onLocationSelect]);
+  }, [isClient, center, radius]);
 
   if (!isClient) {
     return (

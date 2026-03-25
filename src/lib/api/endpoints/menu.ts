@@ -5,33 +5,31 @@ export const menuApi = {
   getMenu: async (): Promise<MenuCategory[]> => {
     const { data } = await apiClient.get<{ readyNow: MenuItem[]; regular: MenuItem[] }>('/menu');
     
-    // Transform backend response to frontend format and convert price strings to numbers
-    const transformItems = (items: any[]): MenuItem[] => {
-      return items.map(item => ({
-        ...item,
-        price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
-      }));
-    };
-    
-    const categories: MenuCategory[] = [];
-    
-    if (data.readyNow && data.readyNow.length > 0) {
-      categories.push({
-        id: 'ready-now',
-        name: 'Ready Now',
-        items: transformItems(data.readyNow),
-      });
+    const transformItem = (item: any): MenuItem => ({
+      ...item,
+      price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+    });
+
+    const allItems = [
+      ...(data.readyNow || []).map(transformItem),
+      ...(data.regular || []).map(transformItem),
+    ];
+
+    if (allItems.length === 0) return [];
+
+    // Group by category
+    const categoryMap = new Map<string, MenuItem[]>();
+    for (const item of allItems) {
+      const cat = item.category || 'Other';
+      if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+      categoryMap.get(cat)!.push(item);
     }
-    
-    if (data.regular && data.regular.length > 0) {
-      categories.push({
-        id: 'regular',
-        name: 'Regular Menu',
-        items: transformItems(data.regular),
-      });
-    }
-    
-    return categories;
+
+    return Array.from(categoryMap.entries()).map(([name, items]) => ({
+      id: name.toLowerCase().replace(/\s+/g, '-'),
+      name,
+      items,
+    }));
   },
 
   getMenuItem: async (id: string): Promise<MenuItem> => {
