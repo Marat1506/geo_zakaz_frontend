@@ -245,46 +245,6 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="center.latitude">Center Latitude</Label>
-                  <Input
-                    id="center.latitude"
-                    type="number"
-                    step="any"
-                    {...register('center.latitude', { valueAsNumber: true })}
-                    placeholder="-90 to 90"
-                  />
-                  {(() => {
-                    const centerErrors = (errors as Record<string, unknown>).center;
-                    if (centerErrors && typeof centerErrors === 'object' && centerErrors !== null) {
-                      const latError = (centerErrors as Record<string, { message?: string }>)?.latitude?.message;
-                      if (latError) {
-                        return <p className="text-sm text-red-500 mt-1">{latError}</p>;
-                      }
-                    }
-                    return null;
-                  })()}
-                </div>
-                <div>
-                  <Label htmlFor="center.longitude">Center Longitude</Label>
-                  <Input
-                    id="center.longitude"
-                    type="number"
-                    step="any"
-                    {...register('center.longitude', { valueAsNumber: true })}
-                    placeholder="-180 to 180"
-                  />
-                  {(() => {
-                    const centerErrors = (errors as Record<string, unknown>).center;
-                    if (centerErrors && typeof centerErrors === 'object' && centerErrors !== null) {
-                      const lonError = (centerErrors as Record<string, { message?: string }>)?.longitude?.message;
-                      if (lonError) {
-                        return <p className="text-sm text-red-500 mt-1">{lonError}</p>;
-                      }
-                    }
-                    return null;
-                  })()}
-                </div>
               </div>
 
               <div>

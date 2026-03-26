@@ -1,9 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';
-import { useCartStore } from '@/lib/store/cart-store';
-import { useAuthStore } from '@/lib/store/auth-store';
+import { useRouter } from 'next/navigation';import { useCartStore } from '@/lib/store/cart-store';import { useAuthStore } from '@/lib/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,10 +18,6 @@ const DeliveryZoneMap = dynamic(
   () => import('@/components/map/delivery-zone-map').then((mod) => mod.DeliveryZoneMap),
   { ssr: false, loading: () => <div className="w-full h-[260px] bg-gray-100 rounded-lg flex items-center justify-center"><p className="text-gray-500">Loading map...</p></div> }
 );
-
-const CAR_COLORS = [
-  'Red', 'Blue', 'White', 'Black', 'Silver', 'Gray', 'Green', 'Yellow', 'Orange', 'Brown', 'Other'
-];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -117,7 +111,6 @@ export default function CheckoutPage() {
       
       // Add car information
       formData.append('carPlateNumber', data.carPlateNumber);
-      formData.append('carColor', data.carColor);
       if (data.parkingSpot) {
         formData.append('parkingSpot', data.parkingSpot);
       }
@@ -283,22 +276,6 @@ export default function CheckoutPage() {
                       placeholder="ABC-1234"
                       className="mt-2 h-12 text-lg border-2 border-orange-300 focus:border-orange-500"
                     />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="carColor" className="text-lg font-semibold text-gray-700">
-                      Car Color *
-                    </Label>
-                    <select
-                      id="carColor"
-                      {...register('carColor', { required: true })}
-                      className="mt-2 w-full h-12 px-4 text-lg border-2 border-orange-300 rounded-md focus:border-orange-500 focus:outline-none"
-                    >
-                      <option value="">Select color</option>
-                      {CAR_COLORS.map(color => (
-                        <option key={color} value={color.toLowerCase()}>{color}</option>
-                      ))}
-                    </select>
                   </div>
 
                   <div>
