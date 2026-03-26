@@ -209,7 +209,11 @@ export default function OrdersManagementPage() {
                       <div>
                         <p className="text-sm font-semibold text-gray-700 mb-2">Car photo:</p>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={order.carPhotoUrl} alt="Car" className="h-32 rounded-lg object-cover border" />
+                        <img
+                          src={order.carPhotoUrl.startsWith('http') ? order.carPhotoUrl : `${process.env.NEXT_PUBLIC_BACKEND_URL || ''}${order.carPhotoUrl}`}
+                          alt="Car"
+                          className="h-32 rounded-lg object-cover border"
+                        />
                       </div>
                     )}
                   </div>
