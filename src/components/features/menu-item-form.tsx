@@ -10,6 +10,7 @@ import {
   useCategories,
   useCreateCategory,
 } from '@/lib/hooks/use-menu';
+import { useSellerZones } from '@/lib/hooks/use-seller';
 import { MenuItem } from '@/types/menu';
 import {
   Dialog,
@@ -44,6 +45,7 @@ export function MenuItemForm({
   const updateMenuItem = useUpdateMenuItem();
   const uploadImage = useUploadImage();
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+  const { data: zones = [], isLoading: zonesLoading } = useSellerZones();
   const createCategory = useCreateCategory();
   const { addToast } = useToast();
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -51,7 +53,7 @@ export function MenuItemForm({
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [useFileUpload, setUseFileUpload] = useState(false);
-  
+
   // Derive image preview from item or custom upload
   const imagePreview = useMemo(() => {
     if (customImagePreview) return customImagePreview;
@@ -68,19 +70,21 @@ export function MenuItemForm({
     resolver: zodResolver(menuItemSchema),
     defaultValues: item
       ? {
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          category: item.category,
-          preparationTime: item.preparationTime,
-          available: item.available,
-          readyNow: item.readyNow || false,
-          imageUrl: item.imageUrl,
-        }
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        preparationTime: item.preparationTime,
+        available: item.available,
+        readyNow: item.readyNow || false,
+        imageUrl: item.imageUrl,
+        zoneId: (item as any).zoneId || '',
+      }
       : {
-          available: true,
-          readyNow: false,
-        },
+        available: true,
+        readyNow: false,
+        zoneId: '',
+      },
   });
 
   // Reset form when dialog opens/closes or item changes
@@ -89,19 +93,21 @@ export function MenuItemForm({
 
     const itemData = item
       ? {
-          name: item.name,
-          description: item.description,
-          price: item.price,
-          category: item.category,
-          preparationTime: item.preparationTime,
-          available: item.available,
-          readyNow: item.readyNow || false,
-          imageUrl: item.imageUrl,
-        }
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        category: item.category,
+        preparationTime: item.preparationTime,
+        available: item.available,
+        readyNow: item.readyNow || false,
+        imageUrl: item.imageUrl,
+        zoneId: (item as any).zoneId || '',
+      }
       : {
-          available: true,
-          readyNow: false,
-        };
+        available: true,
+        readyNow: false,
+        zoneId: '',
+      };
 
     reset(itemData);
   }, [open, item, reset]);
@@ -275,6 +281,28 @@ export function MenuItemForm({
                 </p>
               )}
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="zoneId">Delivery Zone *</Label>
+            <select
+              id="zoneId"
+              {...register('zoneId')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+              disabled={zonesLoading}
+            >
+              <option value="">Select a zone</option>
+              {zones.map((zone: any) => (
+                <option key={zone.id} value={zone.id}>
+                  {zone.name}
+                </option>
+              ))}
+            </select>
+            {errors.zoneId && (
+              <p className="text-sm text-red-500 mt-1">
+                {errors.zoneId.message}
+              </p>
+            )}
           </div>
 
           <div>

@@ -113,12 +113,12 @@ function OrderSuccessContent() {
             )}
 
             <div className="pt-6 space-y-3">
-              <Link href="/menu" className="block">
-                <Button className="w-full h-14 text-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600">
-                  Order More
+              <Link href="/" className="block">
+                <Button className="w-full h-14 text-lg bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 font-bold shadow-lg">
+                  Return to Home
                 </Button>
               </Link>
-              <p className="text-center text-sm text-gray-600">
+              <p className="text-center text-sm text-gray-600 font-medium italic">
                 We'll notify you when your order is ready for pickup
               </p>
             </div>

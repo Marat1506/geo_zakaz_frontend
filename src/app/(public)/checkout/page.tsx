@@ -1,7 +1,7 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation';import { useCartStore } from '@/lib/store/cart-store';import { useAuthStore } from '@/lib/store/auth-store';
+import { useRouter } from 'next/navigation'; import { useCartStore } from '@/lib/store/cart-store'; import { useAuthStore } from '@/lib/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -98,23 +98,23 @@ export default function CheckoutPage() {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const formData = new FormData();
-      
+
       // Add order items as JSON string
       const orderItems = items.map(item => ({
         menuItemId: item.menuItem.id,
         quantity: item.quantity,
       }));
       formData.append('items', JSON.stringify(orderItems));
-      
+
       // Add car information
       formData.append('carPlateNumber', data.carPlateNumber);
       if (data.parkingSpot) {
         formData.append('parkingSpot', data.parkingSpot);
       }
-      
+
       // Add location: prefer detected user location, fall back to main parking lot
       if (userLocation) {
         formData.append('customerLat', String(userLocation.latitude));
@@ -123,15 +123,15 @@ export default function CheckoutPage() {
         formData.append('customerLat', '40.7128');
         formData.append('customerLng', '-74.0060');
       }
-      
+
       // Add payment method
       formData.append('paymentMethod', 'cash');
-      
+
       // Add customerId if user is logged in
       if (user) {
         formData.append('customerId', user.id);
       }
-      
+
       // Add car photo
       formData.append('carPhoto', carPhoto);
 
@@ -152,10 +152,10 @@ export default function CheckoutPage() {
       }
 
       const order = await response.json();
-      
+
       // Clear cart after successful order
       useCartStore.getState().clearCart();
-      
+
       // Redirect to order tracking or success page
       router.push(`/order-success?orderId=${order.id}`);
     } catch (error) {
@@ -173,14 +173,28 @@ export default function CheckoutPage() {
 
   if (items.length === 0 || !user) return null;
 
+  const handleBackToCart = () => {
+    router.push('/cart');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 py-8 px-4">
       <div className="container mx-auto max-w-4xl">
-        <h1 className="text-3xl md:text-4xl font-bold text-orange-600 mb-4 md:mb-8 text-center">
-          Checkout
-        </h1>
+        <div className="flex items-center justify-between mb-8">
+          <Button
+            variant="ghost"
+            onClick={handleBackToCart}
+            className="text-orange-600 hover:bg-orange-100 font-bold gap-2 min-h-[48px]"
+          >
+            ← Back to Cart
+          </Button>
+          <h1 className="text-3xl md:text-4xl font-black text-orange-600 drop-shadow-sm">
+            Checkout
+          </h1>
+          <div className="w-24 hidden md:block" /> {/* Spacer */}
+        </div>
 
-        <Card className="mb-6 border-2 border-orange-200 bg-white/80">
+        <Card className="mb-6 border-2 border-orange-200 bg-white/80 shadow-lg overflow-hidden rounded-2xl">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base md:text-lg text-gray-800">
               <MapPin className="h-5 w-5 text-orange-500" />
@@ -222,14 +236,12 @@ export default function CheckoutPage() {
               )}
               {!geoError && !checkLocation.isPending && userLocation && (
                 <p
-                  className={`flex items-center gap-2 ${
-                    inServiceZone ? 'text-emerald-700' : 'text-red-600'
-                  }`}
+                  className={`flex items-center gap-2 ${inServiceZone ? 'text-emerald-700' : 'text-red-600'
+                    }`}
                 >
                   <AlertCircle
-                    className={`h-4 w-4 ${
-                      inServiceZone ? 'text-emerald-500' : 'text-red-500'
-                    }`}
+                    className={`h-4 w-4 ${inServiceZone ? 'text-emerald-500' : 'text-red-500'
+                      }`}
                   />
                   {inServiceZone
                     ? `You are inside our delivery zone${zoneName ? ` (“${zoneName}”)` : ''}.`

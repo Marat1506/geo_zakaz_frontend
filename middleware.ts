@@ -6,11 +6,8 @@ export function middleware(request: NextRequest) {
   const userRole = request.cookies.get('userRole')?.value;
   const { pathname } = request.nextUrl;
 
-  const isAdminRoute =
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/zones') ||
-    pathname.startsWith('/menu-management') ||
-    pathname.startsWith('/orders-management');
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isSellerRoute = pathname.startsWith('/seller');
 
   const isCustomerRoute =
     pathname.startsWith('/profile') ||
@@ -19,16 +16,29 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/cart') ||
     pathname.startsWith('/checkout');
 
-  if (!accessToken && (isAdminRoute || isCustomerRoute)) {
+  if (!accessToken && (isAdminRoute || isSellerRoute || isCustomerRoute)) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (accessToken) {
-    if (isAdminRoute && userRole !== 'admin') {
+    // If logged in as admin/superadmin, don't allow customer routes (redirect to admin dashboard)
+    if (isCustomerRoute && (userRole === 'admin' || userRole === 'superadmin')) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    
+    // If logged in as seller, don't allow customer routes (redirect to seller dashboard)
+    if (isCustomerRoute && userRole === 'seller') {
+      return NextResponse.redirect(new URL('/seller/dashboard', request.url));
+    }
+
+    // Protection for Admin routes
+    if (isAdminRoute && userRole !== 'admin' && userRole !== 'superadmin') {
       return NextResponse.redirect(new URL('/menu', request.url));
     }
-    if (isCustomerRoute && userRole === 'admin') {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+
+    // Protection for Seller routes
+    if (isSellerRoute && userRole !== 'seller') {
+      return NextResponse.redirect(new URL('/menu', request.url));
     }
   }
 

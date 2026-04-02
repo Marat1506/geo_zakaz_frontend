@@ -3,24 +3,31 @@ import { Location, GeoCheckResponse, ServiceZone } from '@/types/geo';
 
 export const geoApi = {
   checkLocation: async (location: Location): Promise<GeoCheckResponse> => {
-    const { data } = await apiClient.post<{ inZone?: boolean; inServiceZone?: boolean; zoneName?: string; message?: string }>('/geo/check', {
+    const { data } = await apiClient.post<{
+      inZone?: boolean;
+      inServiceZone?: boolean;
+      zoneId?: string;
+      zoneName?: string;
+      message?: string;
+    }>('/geo/check', {
       lat: location.latitude,
       lng: location.longitude,
     });
     return {
       inServiceZone: data?.inZone ?? data?.inServiceZone ?? false,
+      zoneId: data?.zoneId,
       zoneName: data?.zoneName,
       message: data?.message,
     };
   },
 
   getPublicServiceZones: async (): Promise<ServiceZone[]> => {
-    const { data } = await apiClient.get('/geo/zones');
+    const { data } = await apiClient.get('/geo/zones/public');
     return data;
   },
 
   getServiceZones: async (): Promise<ServiceZone[]> => {
-    const { data } = await apiClient.get('/geo/admin/zones');
+    const { data } = await apiClient.get('/geo/zones');
     return data;
   },
 
@@ -51,7 +58,7 @@ export const geoApi = {
       payload = zone;
     }
     
-    const { data } = await apiClient.post('/geo/admin/zones', payload);
+    const { data } = await apiClient.post('/geo/zones', payload);
     return data;
   },
 
@@ -82,11 +89,11 @@ export const geoApi = {
       payload = zone;
     }
     
-    const { data } = await apiClient.patch(`/geo/admin/zones/${id}`, payload);
+    const { data } = await apiClient.patch(`/geo/zones/${id}`, payload);
     return data;
   },
 
   deleteServiceZone: async (id: string): Promise<void> => {
-    await apiClient.delete(`/geo/admin/zones/${id}`);
+    await apiClient.delete(`/geo/zones/${id}`);
   },
 };

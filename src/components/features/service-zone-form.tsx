@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import dynamic from 'next/dynamic';
@@ -41,6 +41,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
   const [zoneType, setZoneType] = useState<'circle' | 'polygon'>('circle');
   const [locating, setLocating] = useState(false);
   const [geoCenter, setGeoCenter] = useState<{ latitude: number; longitude: number } | null>(null);
+  const userInteractedRef = useRef(false);
 
   const {
     register,
@@ -55,7 +56,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
     defaultValues: {
       name: '',
       type: 'circle',
-      center: { latitude: 47.2200, longitude: 39.7077 }, // Rostov-na-Donu
+      center: { latitude: 0, longitude: 0 },
       radius: 1000,
       active: true,
     },
@@ -76,6 +77,11 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
   }, [watchType]);
 
   useEffect(() => {
+    if (!isOpen) return;
+
+    // Reset interaction ref when opening
+    userInteractedRef.current = false;
+
     if (zone) {
       // Editing existing zone
       setZoneType(zone.type);
@@ -101,23 +107,31 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
         });
       }
     } else {
-      // Creating new zone — try to get user location
+      // Creating new zone
       reset({
         name: '',
         type: 'circle',
-        center: { latitude: 47.2200, longitude: 39.7077 },
+        center: { latitude: 0, longitude: 0 },
         radius: 1000,
         active: true,
       });
       setZoneType('circle');
       setGeoCenter(null);
 
+      // Only attempt geolocation if we are creating a new zone and haven't set a center yet
       if (navigator.geolocation) {
         setLocating(true);
         navigator.geolocation.getCurrentPosition(
           (pos) => {
+            // Only update if the user hasn't interacted yet
+            if (userInteractedRef.current) {
+              setLocating(false);
+              return;
+            }
+
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
+
             setValue('center.latitude', lat);
             setValue('center.longitude', lng);
             setGeoCenter({ latitude: lat, longitude: lng });
@@ -128,7 +142,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
         );
       }
     }
-  }, [zone, reset]);
+  }, [isOpen, zone, reset]);
 
   const onSubmit = async (data: ServiceZoneFormData) => {
     try {
@@ -165,7 +179,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
   const handleTypeChange = (newType: 'circle' | 'polygon') => {
     setZoneType(newType);
     setValue('type', newType);
-    
+
     // Reset coordinates when changing type
     if (newType === 'circle') {
       setValue('center', { latitude: 0, longitude: 0 });
@@ -237,6 +251,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
                   center={geoCenter ?? watch('center')}
                   radius={watch('radius') || 1000}
                   onLocationSelect={(lat, lng) => {
+                    userInteractedRef.current = true;
                     setValue('center.latitude', lat);
                     setValue('center.longitude', lng);
                     setGeoCenter(null);

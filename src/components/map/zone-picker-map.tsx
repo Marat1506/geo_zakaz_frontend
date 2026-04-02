@@ -38,11 +38,11 @@ export function ZonePickerMap({
 
     const initialCenter: [number, number] = center && !isNaN(center.latitude) && !isNaN(center.longitude) && (center.latitude !== 0 || center.longitude !== 0)
       ? [center.latitude, center.longitude]
-      : [47.2200, 39.7077]; // Rostov-na-Donu fallback
+      : [20, 0]; // World center — neutral fallback
 
     // Initialize map only once
     if (!mapRef.current) {
-      const map = L.map('zone-picker-map').setView(initialCenter, 13);
+      const map = L.map('zone-picker-map').setView(initialCenter, center && center.latitude !== 0 ? 13 : 3);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',

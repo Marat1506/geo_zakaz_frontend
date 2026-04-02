@@ -76,7 +76,7 @@ export function MobileNav() {
             >
               Menu
             </Link>
-            
+
             {isAuthenticated && user?.role === "customer" && (
               <>
                 <Link
@@ -95,32 +95,32 @@ export function MobileNav() {
                 </Link>
               </>
             )}
-            
-            {isAuthenticated && user?.role === "admin" && (
+
+            {(isAuthenticated && (user?.role === "admin" || user?.role === "superadmin")) && (
               <>
                 <Link
-                  href="/dashboard"
+                  href="/admin/dashboard"
                   onClick={() => setOpen(false)}
                   className="text-lg font-medium transition-colors hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 rounded-sm px-2 py-2 min-h-[44px] flex items-center"
                 >
-                  Dashboard
+                  Admin Dashboard
                 </Link>
                 <Link
-                  href="/zones"
+                  href="/admin/zones"
                   onClick={() => setOpen(false)}
                   className="text-lg font-medium transition-colors hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 rounded-sm px-2 py-2 min-h-[44px] flex items-center"
                 >
                   Service Zones
                 </Link>
                 <Link
-                  href="/menu-management"
+                  href="/admin/menu-management"
                   onClick={() => setOpen(false)}
                   className="text-lg font-medium transition-colors hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 rounded-sm px-2 py-2 min-h-[44px] flex items-center"
                 >
                   Menu Management
                 </Link>
                 <Link
-                  href="/orders-management"
+                  href="/admin/orders-management"
                   onClick={() => setOpen(false)}
                   className="text-lg font-medium transition-colors hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 rounded-sm px-2 py-2 min-h-[44px] flex items-center"
                 >
@@ -128,7 +128,33 @@ export function MobileNav() {
                 </Link>
               </>
             )}
-            
+
+            {isAuthenticated && user?.role === "seller" && (
+              <>
+                <Link
+                  href="/seller/dashboard"
+                  onClick={() => setOpen(false)}
+                  className="text-lg font-medium transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-sm px-2 py-2 min-h-[44px] flex items-center"
+                >
+                  Seller Dashboard
+                </Link>
+                <Link
+                  href="/seller/zones"
+                  onClick={() => setOpen(false)}
+                  className="text-lg font-medium transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-sm px-2 py-2 min-h-[44px] flex items-center"
+                >
+                  Manage Zones
+                </Link>
+                <Link
+                  href="/seller/menu"
+                  onClick={() => setOpen(false)}
+                  className="text-lg font-medium transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded-sm px-2 py-2 min-h-[44px] flex items-center"
+                >
+                  Manage Menu
+                </Link>
+              </>
+            )}
+
             {!isAuthenticated && (
               <div className="flex flex-col gap-2 mt-4">
                 <Button asChild className="w-full">

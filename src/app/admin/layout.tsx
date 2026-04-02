@@ -9,7 +9,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { isAuthenticated, user } = useAuthGuard('admin');
+  const { isAuthenticated, user } = useAuthGuard('superadmin');
 
   if (!isAuthenticated || !user) {
     return (

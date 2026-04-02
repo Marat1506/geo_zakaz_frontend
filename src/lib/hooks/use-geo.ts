@@ -11,7 +11,7 @@ export function useCheckLocation() {
   return useMutation({
     mutationFn: (location: Location) => geoApi.checkLocation(location),
     onSuccess: (data, variables) => {
-      setLocation(variables, data.inServiceZone, data.zoneName);
+      setLocation(variables, data.inServiceZone, data.zoneId, data.zoneName);
     },
   });
 }
@@ -40,6 +40,9 @@ export function useCreateServiceZone() {
       geoApi.createServiceZone(zone),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['serviceZones'] });
+      queryClient.invalidateQueries({ queryKey: ['sellerZones'] });
+      queryClient.invalidateQueries({ queryKey: ['publicServiceZones'] });
+      queryClient.invalidateQueries({ queryKey: ['publicZones'] });
     },
   });
 }
@@ -52,6 +55,9 @@ export function useUpdateServiceZone() {
       geoApi.updateServiceZone(id, zone),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['serviceZones'] });
+      queryClient.invalidateQueries({ queryKey: ['sellerZones'] });
+      queryClient.invalidateQueries({ queryKey: ['publicServiceZones'] });
+      queryClient.invalidateQueries({ queryKey: ['publicZones'] });
     },
   });
 }
@@ -63,6 +69,9 @@ export function useDeleteServiceZone() {
     mutationFn: (id: string) => geoApi.deleteServiceZone(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['serviceZones'] });
+      queryClient.invalidateQueries({ queryKey: ['sellerZones'] });
+      queryClient.invalidateQueries({ queryKey: ['publicServiceZones'] });
+      queryClient.invalidateQueries({ queryKey: ['publicZones'] });
     },
   });
 }

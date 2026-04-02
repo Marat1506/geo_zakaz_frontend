@@ -5,8 +5,9 @@ import { Location } from '@/types/geo';
 interface GeoState {
   userLocation: Location | null;
   inServiceZone: boolean;
+  zoneId: string | null;
   zoneName: string | null;
-  setLocation: (location: Location, inZone: boolean, zoneName?: string) => void;
+  setLocation: (location: Location, inZone: boolean, zoneId?: string, zoneName?: string) => void;
   clearLocation: () => void;
 }
 
@@ -15,12 +16,14 @@ export const useGeoStore = create<GeoState>()(
     (set) => ({
       userLocation: null,
       inServiceZone: false,
+      zoneId: null,
       zoneName: null,
 
-      setLocation: (location, inZone, zoneName) => {
+      setLocation: (location, inZone, zoneId, zoneName) => {
         set({
           userLocation: location,
           inServiceZone: inZone,
+          zoneId: zoneId || null,
           zoneName: zoneName || null,
         });
       },
@@ -29,6 +32,7 @@ export const useGeoStore = create<GeoState>()(
         set({
           userLocation: null,
           inServiceZone: false,
+          zoneId: null,
           zoneName: null,
         });
       },

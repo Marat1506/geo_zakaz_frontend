@@ -30,7 +30,6 @@ export function Providers({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
-    useAuthStore.persist.rehydrate();
     useCartStore.persist.rehydrate();
     useGeoStore.persist.rehydrate();
   }, []);

@@ -31,7 +31,7 @@ function LoginForm() {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+    resolver: zodResolver(loginSchema) as any,
   });
 
   const onSubmit = (data: LoginFormData) => {
@@ -40,7 +40,14 @@ function LoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 px-4 py-12">
+      <div className="w-full max-w-md mb-6">
+        <Link href="/">
+          <Button variant="ghost" className="text-orange-600 hover:bg-orange-100 font-bold gap-2 min-h-[48px]">
+            ← Back to Home
+          </Button>
+        </Link>
+      </div>
       <Card className="w-full max-w-md shadow-2xl border-4 border-orange-200">
         <CardHeader className="bg-gradient-to-r from-orange-400 to-yellow-400 text-white">
           <div className="flex justify-center mb-2">

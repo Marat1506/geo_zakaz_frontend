@@ -8,15 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Layers } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 
 const ServiceZoneForm = dynamic(
   () => import('@/components/features/service-zone-form').then((mod) => mod.ServiceZoneForm),
   { ssr: false, loading: () => <div className="h-0 overflow-hidden" /> }
 );
 
-// Normalize zone from API (may return snake_case from DB)
 function normalizeZone(z: Record<string, unknown>): ServiceZone {
   return {
     id: String(z.id),
@@ -35,33 +35,34 @@ export default function ServiceZonesPage() {
   const deleteZone = useDeleteServiceZone();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingZone, setEditingZone] = useState<ServiceZone | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const zones = Array.isArray(zonesData)
     ? zonesData
-        .map((z) => (typeof z === 'object' && z !== null ? normalizeZone(z as unknown as Record<string, unknown>) : null))
-        .filter((z): z is ServiceZone => z !== null)
+      .map((z) => (typeof z === 'object' && z !== null ? normalizeZone(z as unknown as Record<string, unknown>) : null))
+      .filter((z): z is ServiceZone => z !== null)
     : [];
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this service zone?')) {
-      return;
-    }
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return;
 
     try {
-      await deleteZone.mutateAsync(id);
+      await deleteZone.mutateAsync(confirmDeleteId);
       toast({
         title: 'Success',
-        description: 'Service zone deleted successfully',
+        description: 'Service zone and its products deleted successfully',
       });
+      setConfirmDeleteId(null);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Failed to delete service zone. It may have existing orders — deactivate the zone instead.';
+        'Failed to delete service zone.';
       toast({
-        title: 'Cannot delete zone',
+        title: 'Error',
         description: message,
         variant: 'destructive',
       });
+      setConfirmDeleteId(null);
     }
   };
 
@@ -142,7 +143,7 @@ export default function ServiceZonesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(zone.id)}
+                      onClick={() => setConfirmDeleteId(zone.id)}
                       disabled={deleteZone.isPending}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -177,6 +178,17 @@ export default function ServiceZonesPage() {
         isOpen={isDialogOpen}
         onClose={handleCloseDialog}
         zone={editingZone}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+        onConfirm={handleDelete}
+        title="Delete Service Zone"
+        description="Are you sure you want to delete this zone? This will also delete all menu items associated with this zone. This action cannot be undone."
+        confirmText="Delete"
+        variant="danger"
+        isLoading={deleteZone.isPending}
       />
     </div>
   );

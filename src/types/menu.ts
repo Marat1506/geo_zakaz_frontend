@@ -8,6 +8,7 @@ export interface MenuItem {
   available: boolean;
   readyNow: boolean;
   preparationTime: number;
+  zoneId?: string;
 }
 
 export interface MenuCategory {

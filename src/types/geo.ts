@@ -5,6 +5,7 @@ export interface Location {
 
 export interface GeoCheckResponse {
   inServiceZone: boolean;
+  zoneId?: string;
   zoneName?: string;
   message?: string;
 }

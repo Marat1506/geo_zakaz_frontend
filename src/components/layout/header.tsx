@@ -29,9 +29,14 @@ export function Header() {
           <Link href="/menu" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition-colors">
             Menu
           </Link>
-          {isAuthenticated && user?.role === "admin" && (
-            <Link href="/dashboard" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition-colors">
+          {(isAuthenticated && (user?.role === "admin" || user?.role === "superadmin")) && (
+            <Link href="/admin/dashboard" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition-colors">
               Admin Dashboard
+            </Link>
+          )}
+          {isAuthenticated && user?.role === "seller" && (
+            <Link href="/seller/dashboard" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">
+              Seller Dashboard
             </Link>
           )}
         </nav>

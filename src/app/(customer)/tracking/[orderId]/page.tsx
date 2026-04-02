@@ -1,10 +1,13 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { useOrder } from '@/lib/hooks/use-orders';
+import { usePushSubscription } from '@/lib/hooks/use-push-subscription';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, Package, Truck, MapPin, Loader2, XCircle, ArrowLeft, RefreshCw } from 'lucide-react';
+import { CheckCircle, Clock, Package, Truck, MapPin, Loader2, XCircle, ArrowLeft, RefreshCw, Bell, BellOff } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from '@/components/ui/toast';
 
 const statusConfig: Record<string, { label: string; icon: any; color: string; ring: string }> = {
   pending_payment: { label: 'Awaiting payment', icon: Clock, color: 'bg-yellow-400', ring: 'ring-yellow-300' },
@@ -16,8 +19,53 @@ const statusConfig: Record<string, { label: string; icon: any; color: string; ri
 
 const statusOrder = ['pending_payment', 'preparing', 'on_the_way', 'delivered'];
 
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 660; // Different pitch for customer
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.6);
+  } catch { }
+}
+
 export default function OrderTrackingPage({ params }: { params: { orderId: string } }) {
   const { data: order, isLoading, error, refetch, isFetching } = useOrder(params.orderId);
+  const { pushEnabled, loading: pushLoading, toggle: togglePush } = usePushSubscription();
+  const socketRef = useRef<any>(null);
+
+  // WebSocket connection for real-time status updates
+  useEffect(() => {
+    if (!params.orderId) return;
+
+    let socket: any;
+    import('socket.io-client').then(({ io }) => {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
+      socket = io(`${backendUrl}/notifications`, { transports: ['websocket'] });
+      socketRef.current = socket;
+
+      socket.on('connect', () => {
+        socket.emit('join_order_room', { orderId: params.orderId });
+      });
+
+      socket.on('order_status_changed', (data: { status: string }) => {
+        playBeep();
+        const label = statusConfig[data.status]?.label || data.status;
+        toast({ title: '📦 Order update!', description: `Your order status changed to: ${label}` });
+        refetch();
+      });
+    }).catch(() => { });
+
+    return () => {
+      socket?.disconnect();
+    };
+  }, [params.orderId, refetch]);
 
   if (isLoading) {
     return (
@@ -67,16 +115,28 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
               Back
             </Button>
           </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="text-gray-500 hover:text-orange-600"
-          >
-            <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={togglePush}
+              disabled={pushLoading}
+              className="text-gray-500 hover:text-orange-600 gap-1.5"
+            >
+              {pushEnabled ? <Bell className="h-4 w-4 text-blue-500" /> : <BellOff className="h-4 w-4" />}
+              {pushEnabled ? 'Push On' : 'Push Off'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="text-gray-500 hover:text-orange-600"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isFetching ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Main order status card */}

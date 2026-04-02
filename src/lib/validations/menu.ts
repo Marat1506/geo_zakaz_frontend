@@ -12,6 +12,7 @@ export const menuItemSchema = z.object({
     .number()
     .int()
     .positive("Preparation time must be positive"),
+  zoneId: z.string().uuid("Please select a delivery zone"),
 });
 
 export type MenuItemFormData = z.infer<typeof menuItemSchema>;

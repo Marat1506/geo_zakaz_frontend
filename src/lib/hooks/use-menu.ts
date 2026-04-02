@@ -27,6 +27,8 @@ export function useCreateMenuItem() {
     mutationFn: (item: Omit<MenuItem, 'id'>) => menuApi.createMenuItem(item),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menu'] });
+      queryClient.invalidateQueries({ queryKey: ['sellerMenu'] });
+      queryClient.invalidateQueries({ queryKey: ['zonePublicMenu'] });
     },
   });
 }
@@ -39,6 +41,8 @@ export function useUpdateMenuItem() {
       menuApi.updateMenuItem(id, item),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['menu'] });
+      queryClient.invalidateQueries({ queryKey: ['sellerMenu'] });
+      queryClient.invalidateQueries({ queryKey: ['zonePublicMenu'] });
       queryClient.invalidateQueries({ queryKey: ['menuItem', variables.id] });
     },
   });
@@ -51,6 +55,8 @@ export function useDeleteMenuItem() {
     mutationFn: (id: string) => menuApi.deleteMenuItem(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menu'] });
+      queryClient.invalidateQueries({ queryKey: ['sellerMenu'] });
+      queryClient.invalidateQueries({ queryKey: ['zonePublicMenu'] });
     },
   });
 }
