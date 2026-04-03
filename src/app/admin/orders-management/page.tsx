@@ -24,6 +24,7 @@ export default function OrdersManagementPage() {
   const [filter, setFilter] = useState<string>('active');
   const [sellerFilter, setSellerFilter] = useState<string>('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [updating, setUpdating] = useState<string | null>(null);
 
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
