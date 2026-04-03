@@ -13,6 +13,7 @@ import dynamic from 'next/dynamic';
 import { useCheckLocation, usePublicServiceZones } from '@/lib/hooks/use-geo';
 import { useGeoStore } from '@/lib/store/geo-store';
 import { toast } from '@/components/ui/toast';
+import { playSound } from '@/lib/utils/sounds';
 
 const DeliveryZoneMap = dynamic(
   () => import('@/components/map/delivery-zone-map').then((mod) => mod.DeliveryZoneMap),
@@ -111,6 +112,7 @@ export default function CheckoutPage() {
 
       // Add car information
       formData.append('carPlateNumber', data.carPlateNumber);
+      formData.append('carColor', data.carColor);
       if (data.parkingSpot) {
         formData.append('parkingSpot', data.parkingSpot);
       }
@@ -153,6 +155,7 @@ export default function CheckoutPage() {
 
       const order = await response.json();
 
+      playSound('order_placed');
       // Clear cart after successful order
       useCartStore.getState().clearCart();
 
@@ -160,6 +163,7 @@ export default function CheckoutPage() {
       router.push(`/order-success?orderId=${order.id}`);
     } catch (error) {
       console.error('Order error:', error);
+      playSound('error');
       const message = error instanceof Error ? error.message : 'Something went wrong.';
       toast({
         title: 'Order failed',

@@ -16,6 +16,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getImageUrl } from '@/lib/utils/image';
 import { cn } from '@/lib/utils/cn';
+import { Footer } from '@/components/layout/footer';
+import { playSound } from '@/lib/utils/sounds';
 
 const ZonesMap = dynamic(() => import('@/components/map/zones-map').then((m) => m.ZonesMap), {
   ssr: false,
@@ -30,6 +32,15 @@ export default function HomePage() {
   const checkLocation = useCheckLocation();
   const router = useRouter();
   const cartCount = items.reduce((s, i) => s + i.quantity, 0);
+
+  // Redirect admin/seller to their dashboards
+  useEffect(() => {
+    if (user?.role === 'admin' || user?.role === 'superadmin') {
+      router.replace('/admin/dashboard');
+    } else if (user?.role === 'seller') {
+      router.replace('/seller/dashboard');
+    }
+  }, [user, router]);
 
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -66,6 +77,7 @@ export default function HomePage() {
   const handleAddToCart = (item: any) => {
     if (!user) { router.push('/login?redirect=/'); return; }
     addItem({ ...item, price: Number(item.price) });
+    playSound('cart_add');
   };
 
   const renderMap = () => (
@@ -182,7 +194,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
-      <header className="bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg sticky top-0 z-10">
+      <header className="bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-white drop-shadow">🍔 LotFood</h1>
           <div className="flex items-center gap-2">
@@ -248,7 +260,7 @@ export default function HomePage() {
                   You are currently in the <span className="text-green-600 font-bold">{selectedZone?.name}</span> area.
                 </p>
               </div>
-              <div className="rounded-3xl overflow-hidden shadow-xl border-4 border-white ring-2 ring-orange-100/50 h-[40vh]">
+              <div className="rounded-3xl overflow-hidden shadow-xl border-4 border-white ring-2 ring-orange-100/50 h-[40vh] isolate">
                 {renderMap()}
               </div>
             </div>
@@ -268,7 +280,7 @@ export default function HomePage() {
                 </p>
               </div>
               <div className={cn(
-                "rounded-3xl overflow-hidden shadow-2xl border-8 border-white ring-4 ring-orange-100/50 transition-all duration-700",
+                "rounded-3xl overflow-hidden shadow-2xl border-8 border-white ring-4 ring-orange-100/50 transition-all duration-700 isolate",
                 showMapOnly ? "h-[65vh]" : "h-[45vh]"
               )}>
                 {renderMap()}
@@ -320,5 +332,6 @@ export default function HomePage() {
         )}
       </div>
     </div>
+    <Footer />
   );
 }

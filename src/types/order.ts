@@ -35,9 +35,15 @@ export interface Order {
   carPhotoUrl: string;
   estimatedTime: number;
   zoneId: string;
+  sellerId?: string;
   zone?: {
     id: string;
     name: string;
+  };
+  seller?: {
+    id: string;
+    name?: string;
+    email: string;
   };
   version: number;
   createdAt: string;

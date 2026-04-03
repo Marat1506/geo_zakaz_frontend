@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { RefreshCw, Bell, BellOff, ChevronDown, ChevronUp, Clock, Car, Package, Filter } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
+import { playSound } from '@/lib/utils/sounds';
 
 type OrderStatus = 'pending_payment' | 'preparing' | 'on_the_way' | 'delivered' | 'cancelled';
 
@@ -20,22 +21,6 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; next?: O
   delivered: { label: 'Delivered', color: 'bg-green-100 text-green-800' },
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
 };
-
-function playBeep() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.6);
-  } catch { }
-}
 
 export default function SellerDashboardPage() {
   const { user } = useAuthStore();
@@ -53,40 +38,34 @@ export default function SellerDashboardPage() {
   );
   const updateStatus = useSellerUpdateOrderStatus();
 
-  // WebSocket connection for real-time new order notifications
+  // WebSocket for real-time new order notifications
   useEffect(() => {
     if (!user?.id) return;
-
     let socket: any;
     import('socket.io-client').then(({ io }) => {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
       socket = io(`${backendUrl}/notifications`, { transports: ['websocket'] });
       socketRef.current = socket;
-
       socket.on('connect', () => {
         socket.emit('join_seller_room', { sellerId: user.id });
       });
-
       socket.on('new_order', (order: any) => {
-        playBeep();
+        playSound('order_received');
         toast({ title: '🔔 New Order!', description: `Order #${order.orderNumber} received.` });
         refetch();
       });
-    }).catch(() => { });
-
-    return () => {
-      socket?.disconnect();
-    };
+    }).catch(() => {});
+    return () => { socket?.disconnect(); };
   }, [user?.id, refetch]);
 
-  // Detect new orders via polling fallback
+  // Polling fallback — detect new orders
   useEffect(() => {
     if (!orders.length) return;
     const currentIds = new Set(orders.map((o: any) => o.id));
     if (prevOrderIdsRef.current.size > 0) {
       for (const id of currentIds) {
         if (!prevOrderIdsRef.current.has(id)) {
-          playBeep();
+          playSound('order_received');
           break;
         }
       }
@@ -98,16 +77,21 @@ export default function SellerDashboardPage() {
     setUpdating(orderId);
     try {
       await updateStatus.mutateAsync({ id: orderId, status: newStatus });
+      playSound('success');
+    } catch {
+      playSound('error');
     } finally {
       setUpdating(null);
     }
   };
 
-  const filteredOrders = orders.filter((o: any) => {
-    if (filter === 'active') return o.status !== 'delivered' && o.status !== 'cancelled';
-    if (filter === 'all') return true;
-    return o.status === filter;
-  }).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const filteredOrders = orders
+    .filter((o: any) => {
+      if (filter === 'active') return o.status !== 'delivered' && o.status !== 'cancelled';
+      if (filter === 'all') return true;
+      return o.status === filter;
+    })
+    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   if (isLoading) return <div className="flex items-center justify-center min-h-[400px]"><LoadingSpinner size="lg" /></div>;
 
@@ -144,19 +128,13 @@ export default function SellerDashboardPage() {
             </button>
           ))}
         </div>
-
         {zones.length > 0 && (
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
             <Filter className="h-4 w-4 text-gray-400" />
-            <select
-              value={zoneFilter}
-              onChange={(e) => setZoneFilter(e.target.value)}
-              className="text-sm font-medium bg-transparent border-none focus:ring-0 cursor-pointer"
-            >
+            <select value={zoneFilter} onChange={(e) => setZoneFilter(e.target.value)}
+              className="text-sm font-medium bg-transparent border-none focus:ring-0 cursor-pointer">
               <option value="">All Zones</option>
-              {zones.map((z: any) => (
-                <option key={z.id} value={z.id}>{z.name}</option>
-              ))}
+              {zones.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}
             </select>
           </div>
         )}
@@ -170,7 +148,6 @@ export default function SellerDashboardPage() {
             const s = statusConfig[order.status as OrderStatus];
             const isExpanded = expandedId === order.id;
             const isUpdating = updating === order.id;
-
             return (
               <Card key={order.id} className="overflow-hidden">
                 <div className="p-4">
@@ -207,7 +184,6 @@ export default function SellerDashboardPage() {
                     </div>
                   </div>
                 </div>
-
                 {isExpanded && (
                   <div className="border-t bg-gray-50 p-4 space-y-3">
                     <div className="space-y-2">

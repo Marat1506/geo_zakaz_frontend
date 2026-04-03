@@ -13,7 +13,6 @@ const navItems = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/menu-management', label: 'Menu', icon: UtensilsCrossed },
   { href: '/admin/categories', label: 'Categories', icon: Tag },
-  { href: '/admin/zones', label: 'Service Zones', icon: MapPin },
   { href: '/admin/sellers', label: 'Sellers', icon: Users },
 ];
 

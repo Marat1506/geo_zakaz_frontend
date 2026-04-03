@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, Package, Truck, MapPin, Loader2, XCircle, ArrowLeft, RefreshCw, Bell, BellOff } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
+import { playSound } from '@/lib/utils/sounds';
 
 const statusConfig: Record<string, { label: string; icon: any; color: string; ring: string }> = {
   pending_payment: { label: 'Awaiting payment', icon: Clock, color: 'bg-yellow-400', ring: 'ring-yellow-300' },
@@ -19,21 +20,12 @@ const statusConfig: Record<string, { label: string; icon: any; color: string; ri
 
 const statusOrder = ['pending_payment', 'preparing', 'on_the_way', 'delivered'];
 
-function playBeep() {
-  try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 660; // Different pitch for customer
-    osc.type = 'sine';
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.6);
-  } catch { }
-}
+const statusSoundMap: Record<string, string> = {
+  preparing: 'status_preparing',
+  on_the_way: 'status_on_the_way',
+  delivered: 'status_delivered',
+  cancelled: 'status_cancelled',
+};
 
 export default function OrderTrackingPage({ params }: { params: { orderId: string } }) {
   const { data: order, isLoading, error, refetch, isFetching } = useOrder(params.orderId);
@@ -55,7 +47,8 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
       });
 
       socket.on('order_status_changed', (data: { status: string }) => {
-        playBeep();
+        const soundKey = statusSoundMap[data.status] || 'success';
+        playSound(soundKey as any);
         const label = statusConfig[data.status]?.label || data.status;
         toast({ title: '📦 Order update!', description: `Your order status changed to: ${label}` });
         refetch();
