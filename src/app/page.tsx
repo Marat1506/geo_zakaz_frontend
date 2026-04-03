@@ -193,7 +193,8 @@ export default function HomePage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
+    <>
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 flex flex-col">
       <header className="bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-white drop-shadow">🍔 LotFood</h1>
@@ -333,5 +334,6 @@ export default function HomePage() {
       </div>
     </div>
     <Footer />
+    </>
   );
 }
