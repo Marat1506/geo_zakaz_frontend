@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { LayoutDashboard, MapPin, UtensilsCrossed, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, MapPin, UtensilsCrossed, LogOut, Menu, X, Store } from 'lucide-react';
 import { useLogout } from '@/lib/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/seller/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/seller/zones', label: 'Zones', icon: MapPin },
   { href: '/seller/menu', label: 'Menu', icon: UtensilsCrossed },
+  { href: '/seller/profile', label: 'Shop Profile', icon: Store },
 ];
 
 export function SellerSidebar() {

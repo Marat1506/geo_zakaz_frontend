@@ -11,13 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { ShoppingCart, User, LogIn, X, Clock, Plus, Lock, MapPin, Utensils } from 'lucide-react';
+import { ShoppingCart, User, LogIn, X, Clock, Plus, Lock, MapPin, Utensils, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getImageUrl } from '@/lib/utils/image';
 import { cn } from '@/lib/utils/cn';
 import { Footer } from '@/components/layout/footer';
 import { playSound } from '@/lib/utils/sounds';
+import { Reviews } from '@/components/reviews/reviews';
 
 const ZonesMap = dynamic(() => import('@/components/map/zones-map').then((m) => m.ZonesMap), {
   ssr: false,
@@ -127,7 +128,11 @@ export default function HomePage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-12">
           {zoneMenu.map((item: any) => (
-            <Card key={item.id} className="overflow-hidden flex flex-col border-orange-100 shadow-md hover:shadow-xl transition-all duration-300 group rounded-2xl">
+            <Card
+              key={item.id}
+              className="overflow-hidden flex flex-col border-orange-100 shadow-md hover:shadow-xl transition-all duration-300 group rounded-2xl cursor-pointer"
+              onClick={() => router.push(`/menu/${item.id}`)}
+            >
               {item.imageUrl ? (
                 <div className="h-48 w-full bg-gray-100 overflow-hidden">
                   <img
@@ -150,6 +155,13 @@ export default function HomePage() {
                     {item.available ? 'Available' : 'Sold Out'}
                   </Badge>
                 </div>
+                {item.averageRating > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-yellow-500 text-sm">★</span>
+                    <span className="text-sm font-semibold text-gray-700">{Number(item.averageRating).toFixed(1)}</span>
+                    <span className="text-xs text-gray-500">({item.reviewCount || 0})</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="flex-1 pb-4">
                 <p className="text-sm text-gray-600 line-clamp-2 mb-4 leading-relaxed">
@@ -172,7 +184,10 @@ export default function HomePage() {
                   <span className="text-2xl font-black text-orange-600">${Number(item.price).toFixed(2)}</span>
                 </div>
                 <Button
-                  onClick={() => handleAddToCart(item)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddToCart(item);
+                  }}
                   disabled={!item.available}
                   className="min-h-[48px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95"
                 >

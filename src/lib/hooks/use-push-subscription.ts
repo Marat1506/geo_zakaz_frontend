@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
+import { getApiBaseUrl } from '@/lib/api/get-api-base-url';
 
 export function usePushSubscription() {
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -33,7 +34,7 @@ export function usePushSubscription() {
       const reg = await navigator.serviceWorker.ready;
       
       // Get VAPID public key
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+      const apiUrl = getApiBaseUrl();
       const res = await fetch(`${apiUrl}/notifications/vapid-public-key`);
       if (!res.ok) throw new Error('Failed to get VAPID key');
       const { publicKey } = await res.json();
@@ -76,7 +77,7 @@ export function usePushSubscription() {
         await sub.unsubscribe();
         
         // Notify backend (optional, backend should handle 410 Gone anyway)
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+        const apiUrl = getApiBaseUrl();
         const token = localStorage.getItem('accessToken');
         await fetch(`${apiUrl}/notifications/subscribe`, {
           method: 'DELETE',

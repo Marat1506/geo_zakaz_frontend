@@ -44,10 +44,16 @@ export function ZonesMap({ zones, userLocation, selectedZoneId, currentZoneId, o
     if (!isClient) return;
 
     if (!mapRef.current) {
+      // Initialize map with user location if available, otherwise default view
+      const initialCenter: [number, number] = userLocation
+        ? [userLocation.lat, userLocation.lng]
+        : [20, 0];
+      const initialZoom = userLocation ? 12 : 2; // City zoom level if user location available
+
       const map = L.map('zones-map', {
         zoomControl: true,
         scrollWheelZoom: true,
-      }).setView([20, 0], 2);
+      }).setView(initialCenter, initialZoom);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
@@ -168,8 +174,14 @@ export function ZonesMap({ zones, userLocation, selectedZoneId, currentZoneId, o
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon })
         .addTo(map)
         .bindTooltip('You are here', { direction: 'top' });
+
+      // Center map on user location with city zoom when location first becomes available
+      // Only if no zones are selected (to avoid disrupting zone viewing)
+      if (!selectedZoneId && zones.length === 0) {
+        map.setView([userLocation.lat, userLocation.lng], 12, { animate: true });
+      }
     }
-  }, [isClient, userLocation]);
+  }, [isClient, userLocation, selectedZoneId, zones.length]);
 
   if (!isClient) return <div style={{ height }} className="bg-gray-100 flex items-center justify-center"><span className="text-gray-500">Loading map...</span></div>;
 

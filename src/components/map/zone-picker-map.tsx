@@ -51,27 +51,7 @@ export function ZonePickerMap({
 
       mapRef.current = map;
 
-      map.on('click', (e: L.LeafletMouseEvent) => {
-        const { lat, lng } = e.latlng;
-        onLocationSelect(lat, lng);
-
-        if (markerRef.current) {
-          markerRef.current.setLatLng([lat, lng]);
-        } else {
-          markerRef.current = L.marker([lat, lng]).addTo(map);
-        }
-
-        if (circleRef.current) {
-          circleRef.current.setLatLng([lat, lng]);
-        } else {
-          circleRef.current = L.circle([lat, lng], {
-            radius: radius,
-            color: '#f97316',
-            fillColor: '#f97316',
-            fillOpacity: 0.2,
-          }).addTo(map);
-        }
-      });
+      // Map is read-only — no click handler, center is set from geolocation only
     }
 
     return () => {

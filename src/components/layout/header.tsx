@@ -4,79 +4,119 @@ import * as React from "react"
 import Link from "next/link"
 import { useAuthStore } from "@/lib/store/auth-store"
 import { useCartStore } from "@/lib/store/cart-store"
+import { useLogout } from "@/lib/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { User, ShoppingCart, LogIn, UserPlus } from "lucide-react"
+import { User, ShoppingCart, LogIn, UserPlus, Package, LogOut } from "lucide-react"
+import { getImageUrl } from "@/lib/utils/image"
 
-export function Header() {
+interface HeaderSellerInfo {
+  shopName?: string
+  shopDescription?: string
+  shopLogo?: string
+}
+
+interface HeaderProps {
+  sellerInfo?: HeaderSellerInfo
+}
+
+export function Header({ sellerInfo }: HeaderProps = {}) {
   const { isAuthenticated, user } = useAuthStore()
   const items = useCartStore((state) => state.items)
+  const logoutMutation = useLogout()
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const isCustomer = user?.role === "customer"
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-orange-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
-      <div className="container flex h-16 items-center justify-between px-4">
+    <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg">
+      <div className="container flex min-h-[72px] items-center justify-between px-4 py-3 gap-3">
 
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <span className="font-bold text-xl bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
-            🍔 GeoZakaz
-          </span>
-        </Link>
-
-        {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-1">
-          <Link href="/menu" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition-colors">
-            Menu
+        <div className="flex items-center gap-3 min-w-0 shrink">
+          <Link href="/" className="flex items-center gap-2 shrink-0">
+            <span className="font-bold text-2xl text-white drop-shadow">
+              🍔 LotFood
+            </span>
           </Link>
-          {(isAuthenticated && (user?.role === "admin" || user?.role === "superadmin")) && (
-            <Link href="/admin/dashboard" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-orange-50 hover:text-orange-600 transition-colors">
-              Admin Dashboard
-            </Link>
-          )}
-          {isAuthenticated && user?.role === "seller" && (
-            <Link href="/seller/dashboard" className="text-sm font-medium px-3 py-2 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">
-              Seller Dashboard
-            </Link>
+          {sellerInfo ? (
+            <div className="hidden md:flex items-center gap-2 min-w-0 bg-white/20 rounded-xl px-2 py-1.5 border border-white/30">
+              {sellerInfo.shopLogo ? (
+                <img
+                  src={getImageUrl(sellerInfo.shopLogo)}
+                  alt={sellerInfo.shopName || "Seller"}
+                  className="h-9 w-9 rounded-full object-cover border border-white/60 shrink-0"
+                />
+              ) : (
+                <div className="h-9 w-9 rounded-full bg-white/40 flex items-center justify-center text-sm shrink-0">🏪</div>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-white truncate">{sellerInfo.shopName || "Seller"}</p>
+                <p className="text-xs text-orange-50/95 truncate">{sellerInfo.shopDescription || ""}</p>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        <nav className="hidden md:flex items-center gap-2">
+          <Link href="/menu">
+            <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px]">
+              Menu
+            </Button>
+          </Link>
+          {isCustomer && (
+            <>
+              <Link href="/orders">
+                <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2">
+                  <Package className="h-4 w-4" />
+                  My Orders
+                </Button>
+              </Link>
+            </>
           )}
         </nav>
 
-        {/* Right side */}
-        <div className="flex items-center gap-2">
-          {isAuthenticated && user?.role === "customer" && (
+        <div className="flex items-center gap-2 ml-auto">
+          {isAuthenticated && isCustomer && (
             <>
-              {/* Cart */}
               <Link href="/cart">
-                <Button variant="outline" size="icon" className="relative border-orange-300 hover:bg-orange-50 min-h-[44px] min-w-[44px]" aria-label="Cart">
-                  <ShoppingCart className="h-5 w-5 text-orange-500" />
+                <Button variant="outline" size="icon" className="relative min-h-[44px] min-w-[44px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label="Cart">
+                  <ShoppingCart className="h-5 w-5 text-orange-600" />
                   {cartItemCount > 0 && (
-                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs bg-orange-500">
+                    <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500 text-white">
                       {cartItemCount}
                     </Badge>
                   )}
                 </Button>
               </Link>
 
-              {/* Profile */}
               <Link href="/profile">
-                <Button className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white min-h-[44px] gap-2 shadow-sm">
+                <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2">
                   <User className="h-4 w-4" />
                   <span className="hidden sm:inline">{user?.name || "Profile"}</span>
                 </Button>
               </Link>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </Button>
             </>
           )}
 
           {!isAuthenticated && (
             <>
               <Link href="/login">
-                <Button variant="outline" className="border-orange-300 text-orange-600 hover:bg-orange-50 min-h-[44px] gap-2">
+                <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2">
                   <LogIn className="h-4 w-4" />
                   <span className="hidden sm:inline">Login</span>
                 </Button>
               </Link>
               <Link href="/register">
-                <Button className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white min-h-[44px] gap-2">
+                <Button className="bg-orange-600 hover:bg-orange-700 text-white min-h-[44px] gap-2 border-2 border-orange-600">
                   <UserPlus className="h-4 w-4" />
                   <span className="hidden sm:inline">Sign up</span>
                 </Button>

@@ -22,8 +22,8 @@ export default function SellerLayout({
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-orange-50/30">
       <SellerSidebar />
-      <main className="flex-1 w-0 min-w-0 p-4 pt-14 pl-4 lg:pt-6 lg:pl-6 lg:p-6">
-        <div className="mx-auto max-w-5xl">{children}</div>
+      <main className="flex-1 min-w-0 px-3 pt-16 pb-4 sm:px-4 lg:px-6 lg:pt-6 lg:pb-6">
+        <div className="w-full max-w-5xl mx-auto">{children}</div>
       </main>
     </div>
   );

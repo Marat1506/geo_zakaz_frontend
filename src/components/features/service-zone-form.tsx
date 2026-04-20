@@ -57,7 +57,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
       name: '',
       type: 'circle',
       center: { latitude: 0, longitude: 0 },
-      radius: 1000,
+      radius: 700,
       active: true,
     },
   });
@@ -94,7 +94,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
             latitude: zone.centerLat ?? 40.758,
             longitude: zone.centerLng ?? -73.9855,
           },
-          radius: zone.radiusMeters ?? 1000,
+          radius: zone.radiusMeters ?? 700,
           active: zone.active,
         });
       } else if (zone.type === 'polygon') {
@@ -183,7 +183,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
     // Reset coordinates when changing type
     if (newType === 'circle') {
       setValue('center', { latitude: 0, longitude: 0 });
-      setValue('radius', 1000);
+      setValue('radius', 700);
     } else {
       setValue('coordinates' as never, [
         { latitude: 0, longitude: 0 },
@@ -239,7 +239,7 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
             <>
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <Label>Select Zone Center on Map</Label>
+                  <Label>Your location will be used as the zone center</Label>
                   {locating && (
                     <span className="flex items-center gap-1 text-xs text-orange-500">
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -249,45 +249,15 @@ export function ServiceZoneForm({ isOpen, onClose, zone }: ServiceZoneFormProps)
                 </div>
                 <ZonePickerMap
                   center={geoCenter ?? watch('center')}
-                  radius={watch('radius') || 1000}
-                  onLocationSelect={(lat, lng) => {
-                    userInteractedRef.current = true;
-                    setValue('center.latitude', lat);
-                    setValue('center.longitude', lng);
-                    setGeoCenter(null);
-                  }}
+                  radius={700}
+                  onLocationSelect={() => {}}
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  The zone will be created at your current location with a fixed radius of 700 meters.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-              </div>
-
-              <div>
-                <Label htmlFor="radius">Radius (meters): {watch('radius') || 1000}m</Label>
-                <input
-                  type="range"
-                  min={100}
-                  max={5000}
-                  step={100}
-                  value={watch('radius') || 1000}
-                  onChange={(e) => setValue('radius', Number(e.target.value), { shouldValidate: true })}
-                  className="w-full accent-orange-500 mt-1"
-                />
-                <Input
-                  id="radius"
-                  type="number"
-                  step="any"
-                  {...register('radius', { valueAsNumber: true })}
-                  placeholder="Enter radius in meters"
-                  className="mt-2"
-                />
-                {(() => {
-                  const radiusError = (errors as Record<string, { message?: string }>).radius?.message;
-                  if (radiusError) {
-                    return <p className="text-sm text-red-500 mt-1">{radiusError}</p>;
-                  }
-                  return null;
-                })()}
               </div>
             </>
           ) : (

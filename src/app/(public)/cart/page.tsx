@@ -5,10 +5,11 @@ import { useAuthStore } from '@/lib/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ShoppingCart, Plus, Minus, Trash2, ArrowRight, Lock, User, LogIn } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, ArrowRight, Lock } from 'lucide-react';
 import Link from 'next/link';
 import { getImageUrl } from '@/lib/utils/image';
 import { useRouter } from 'next/navigation';
+import { Header } from '@/components/layout/header';
 
 export default function CartPage() {
   const { items, subtotal, tax, deliveryFee, total, updateQuantity, updateInstructions, removeItem } = useCartStore();
@@ -50,31 +51,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
-      <header className="bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/menu">
-            <Button variant="ghost" className="text-white hover:bg-white/20 font-bold text-xl px-0 gap-2">
-              ← Menu
-            </Button>
-          </Link>
-          <h1 className="text-xl font-bold text-white">Cart</h1>
-          {user ? (
-            <Link href="/profile">
-              <Button variant="outline" className="min-h-[48px] min-w-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2">
-                <User className="h-5 w-5 text-orange-600" />
-                <span className="hidden sm:inline text-orange-600 font-semibold text-sm">{user.name || 'Profile'}</span>
-              </Button>
-            </Link>
-          ) : (
-            <Link href="/login">
-              <Button variant="outline" className="min-h-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2">
-                <LogIn className="h-5 w-5 text-orange-600" />
-                <span className="hidden sm:inline text-orange-600 font-semibold text-sm">Login</span>
-              </Button>
-            </Link>
-          )}
-        </div>
-      </header>
+      <Header />
 
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

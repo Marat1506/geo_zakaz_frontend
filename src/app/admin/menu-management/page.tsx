@@ -11,15 +11,21 @@ import { MenuItem } from '@/types/menu';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/toast';
 import { getImageUrl } from '@/lib/utils/image';
+import { useSellers } from '@/lib/hooks/use-sellers';
+import { usePublicZones } from '@/lib/hooks/use-seller';
 
 export default function MenuManagementPage() {
   const { data: categories, isLoading } = useMenu();
   const deleteMenuItem = useDeleteMenuItem();
   const { addToast } = useToast();
+  const { data: sellers = [] } = useSellers();
+  const { data: zones = [] } = usePublicZones();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
 
   const allMenuItems = categories?.flatMap((cat) => cat.items) || [];
+  const sellersById = new Map((sellers as any[]).map((seller) => [seller.id, seller.name || seller.email]));
+  const zoneSellerByZoneId = new Map((zones as any[]).map((zone) => [zone.id, zone.sellerId]));
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this menu item?')) {
@@ -98,6 +104,9 @@ export default function MenuManagementPage() {
               </div>
               <div className="text-sm text-gray-500">
                 Category: {item.category}
+              </div>
+              <div className="text-sm text-gray-500">
+                Seller: {sellersById.get(zoneSellerByZoneId.get(item.zoneId)) || 'Unknown'}
               </div>
               <div className="flex gap-2 pt-2">
                 <Button

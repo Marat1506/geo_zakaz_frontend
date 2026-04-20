@@ -97,17 +97,17 @@ export default function SellerDashboardPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
           <p className="text-sm text-gray-500">{orders.length} total</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={togglePush} disabled={pushLoading} className="gap-1.5 min-h-[40px]">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button variant="outline" size="sm" onClick={togglePush} disabled={pushLoading} className="gap-1.5 min-h-[40px] w-full sm:w-auto">
             {pushEnabled ? <Bell className="h-4 w-4 text-blue-500" /> : <BellOff className="h-4 w-4" />}
             {pushLoading ? '...' : (pushEnabled ? 'Push On' : 'Enable Push')}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5 min-h-[40px]">
+          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} className="gap-1.5 min-h-[40px] w-full sm:w-auto">
             <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
@@ -115,7 +115,7 @@ export default function SellerDashboardPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-2">
           {[
             { value: 'active', label: `Active (${orders.filter((o: any) => o.status !== 'delivered' && o.status !== 'cancelled').length})` },
@@ -129,10 +129,10 @@ export default function SellerDashboardPage() {
           ))}
         </div>
         {zones.length > 0 && (
-          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm">
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm w-full sm:w-auto">
             <Filter className="h-4 w-4 text-gray-400" />
             <select value={zoneFilter} onChange={(e) => setZoneFilter(e.target.value)}
-              className="text-sm font-medium bg-transparent border-none focus:ring-0 cursor-pointer">
+              className="text-sm font-medium bg-transparent border-none focus:ring-0 cursor-pointer w-full sm:w-auto">
               <option value="">All Zones</option>
               {zones.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}
             </select>
@@ -149,37 +149,46 @@ export default function SellerDashboardPage() {
             const isExpanded = expandedId === order.id;
             const isUpdating = updating === order.id;
             return (
-              <Card key={order.id} className="overflow-hidden">
-                <div className="p-4">
-                  <div className="flex flex-wrap items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
+              <Card key={order.id} className="overflow-hidden border border-orange-100 shadow-sm">
+                <div className="p-3 sm:p-4">
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
                         <span className="font-bold text-gray-900">#{order.orderNumber}</span>
                         <Badge className={`${s?.color} text-xs`}>{s?.label}</Badge>
                       </div>
-                      <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-3 text-xs sm:text-sm text-gray-500">
                         <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{new Date(order.createdAt).toLocaleString('ru-RU')}</span>
                         <span className="flex items-center gap-1"><Car className="h-3.5 w-3.5" />{order.carPlateNumber}</span>
                         <span className="flex items-center gap-1"><Package className="h-3.5 w-3.5" />{order.items?.length} items</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="font-bold text-lg">${Number(order.totalAmount).toFixed(2)}</span>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs uppercase text-gray-400 font-bold">Total</p>
+                        <span className="font-bold text-lg">${Number(order.totalAmount).toFixed(2)}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
                       {s?.next && (
-                        <Button size="sm" className={`text-white min-h-[40px] text-xs ${s.nextColor}`}
+                        <Button size="sm" className={`text-white min-h-[40px] text-xs w-full sm:w-auto ${s.nextColor}`}
                           onClick={() => handleStatusUpdate(order.id, s.next!)} disabled={isUpdating}>
                           {isUpdating ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : s.nextLabel}
                         </Button>
                       )}
                       {order.status !== 'delivered' && order.status !== 'cancelled' && (
-                        <Button size="sm" variant="outline" className="border-red-300 text-red-500 hover:bg-red-50 min-h-[40px] text-xs"
+                        <Button size="sm" variant="outline" className="border-red-300 text-red-500 hover:bg-red-50 min-h-[40px] text-xs w-full sm:w-auto"
                           onClick={() => handleStatusUpdate(order.id, 'cancelled')} disabled={isUpdating}>
                           Cancel
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" className="min-h-[40px] min-w-[40px] p-0"
+                      <Button size="sm" variant="ghost" className="min-h-[40px] w-full sm:w-auto sm:min-w-[40px] p-0"
                         onClick={() => setExpandedId(isExpanded ? null : order.id)}>
-                        {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        <div className="flex items-center justify-center gap-1.5 px-3">
+                          {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          <span className="text-xs sm:hidden">{isExpanded ? 'Hide details' : 'Show details'}</span>
+                        </div>
                       </Button>
                     </div>
                   </div>
@@ -188,7 +197,7 @@ export default function SellerDashboardPage() {
                   <div className="border-t bg-gray-50 p-4 space-y-3">
                     <div className="space-y-2">
                       {order.items?.map((item: any) => (
-                        <div key={item.id} className="flex items-center gap-3 bg-white rounded-lg p-2 border">
+                        <div key={item.id} className="flex items-center gap-3 bg-white rounded-lg p-2 border border-gray-200">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{item.menuItemName}</p>
                             <p className="text-xs text-gray-500">{item.quantity} × ${Number(item.price).toFixed(2)}</p>

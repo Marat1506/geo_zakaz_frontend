@@ -22,12 +22,27 @@ export const authApi = {
     }
   },
 
-  register: async (userData: RegisterData): Promise<{ user: User; tokens: AuthTokens }> => {
-    // Strip confirmPassword — it's frontend-only validation, backend doesn't accept it
-    const { confirmPassword: _, ...payload } = userData as any;
-    const { data } = await apiClient.post('/auth/register', payload);
-    // Backend returns { accessToken, refreshToken, user }
-    // Transform to { user, tokens: { accessToken, refreshToken } }
+  register: async (userData: RegisterData & {
+    passportMain?: File;
+    passportRegistration?: File;
+    selfie?: File;
+  }): Promise<{ user: User; tokens: AuthTokens }> => {
+    const { confirmPassword: _, passportMain, passportRegistration, selfie, ...payload } = userData as any;
+
+    // Always use FormData to support file uploads
+    const formData = new FormData();
+    Object.entries(payload).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        formData.append(key, String(value));
+      }
+    });
+    if (passportMain) formData.append('passportMain', passportMain);
+    if (passportRegistration) formData.append('passportRegistration', passportRegistration);
+    if (selfie) formData.append('selfie', selfie);
+
+    const { data } = await apiClient.post('/auth/register', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
     return {
       user: data.user,
       tokens: {
