@@ -26,6 +26,10 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
   const logoutMutation = useLogout()
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const isCustomer = user?.role === "customer"
+  const brandName = sellerInfo?.shopName || "LotFood"
+  const brandLogo = sellerInfo?.shopLogo
+  const brandDescription = sellerInfo?.shopDescription || ""
+  const isSellerBranded = Boolean(sellerInfo)
 
   return (
     <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg">
@@ -33,35 +37,36 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
 
         <div className="flex items-center gap-3 min-w-0 shrink">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="font-bold text-2xl text-white drop-shadow">
-              🍔 LotFood
-            </span>
-          </Link>
-          {sellerInfo ? (
-            <div className="hidden md:flex items-center gap-2 min-w-0 bg-white/20 rounded-xl px-2 py-1.5 border border-white/30">
-              {sellerInfo.shopLogo ? (
-                <img
-                  src={getImageUrl(sellerInfo.shopLogo)}
-                  alt={sellerInfo.shopName || "Seller"}
-                  className="h-9 w-9 rounded-full object-cover border border-white/60 shrink-0"
-                />
-              ) : (
-                <div className="h-9 w-9 rounded-full bg-white/40 flex items-center justify-center text-sm shrink-0">🏪</div>
-              )}
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-white truncate">{sellerInfo.shopName || "Seller"}</p>
-                <p className="text-xs text-orange-50/95 truncate">{sellerInfo.shopDescription || ""}</p>
-              </div>
+            {brandLogo ? (
+              <img
+                src={getImageUrl(brandLogo)}
+                alt={brandName}
+                className="h-10 w-10 rounded-full object-cover border-2 border-white/70 shrink-0"
+              />
+            ) : (
+              <span className="text-2xl" aria-hidden="true">🍔</span>
+            )}
+            <div className="min-w-0">
+              <p className="font-bold text-xl text-white drop-shadow truncate max-w-[180px] sm:max-w-[220px] md:max-w-[260px]">
+                {brandName}
+              </p>
+              {isSellerBranded ? (
+                <p className="text-xs text-orange-50/95 truncate hidden sm:block max-w-[260px]">
+                  {brandDescription}
+                </p>
+              ) : null}
             </div>
-          ) : null}
+          </Link>
         </div>
 
         <nav className="hidden md:flex items-center gap-2">
-          <Link href="/menu">
-            <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px]">
-              Menu
-            </Button>
-          </Link>
+          {!isSellerBranded && (
+            <Link href="/menu">
+              <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px]">
+                Menu
+              </Button>
+            </Link>
+          )}
           {isCustomer && (
             <>
               <Link href="/orders">
@@ -74,7 +79,7 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
           )}
         </nav>
 
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-2 ml-auto shrink-0">
           {isAuthenticated && isCustomer && (
             <>
               <Link href="/cart">
