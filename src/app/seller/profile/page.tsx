@@ -30,6 +30,7 @@ export default function SellerProfilePage() {
   });
   const [qrCode, setQrCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [savedSlug, setSavedSlug] = useState('');
 
   useEffect(() => {
     loadProfile();
@@ -39,6 +40,7 @@ export default function SellerProfilePage() {
     try {
       const response = await apiClient.get('/auth/seller/profile');
       setProfile(response.data);
+      setSavedSlug(response.data?.slug || '');
     } catch (error) {
       console.error('Failed to load profile:', error);
     } finally {
@@ -60,7 +62,7 @@ export default function SellerProfilePage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await apiClient.patch('/auth/seller/profile', {
+      const response = await apiClient.patch('/auth/seller/profile', {
         shopName: profile.shopName,
         shopDescription: profile.shopDescription,
         shopLogo: profile.shopLogo,
@@ -69,6 +71,7 @@ export default function SellerProfilePage() {
         contactAddress: profile.contactAddress,
         slug: profile.slug,
       });
+      setSavedSlug(response.data?.slug || profile.slug || '');
       toast({ title: 'Profile updated successfully!' });
       loadProfile();
     } catch (error: any) {
@@ -105,7 +108,7 @@ export default function SellerProfilePage() {
   };
 
   const copyReferralLink = () => {
-    const link = `${window.location.origin}/ref/${profile.slug}`;
+    const link = `${window.location.origin}/ref/${savedSlug}`;
     navigator.clipboard.writeText(link);
     setCopied(true);
     toast({ title: 'Referral link copied!' });
@@ -253,7 +256,7 @@ export default function SellerProfilePage() {
         </Card>
 
         {/* Referral Stats */}
-        {profile.slug && (
+        {savedSlug && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -277,7 +280,7 @@ export default function SellerProfilePage() {
                 <Label>Your Referral Link</Label>
                 <div className="flex flex-col sm:flex-row gap-2 mt-1">
                   <Input
-                    value={`${window.location.origin}/ref/${profile.slug}`}
+                    value={`${window.location.origin}/ref/${savedSlug}`}
                     readOnly
                     className="flex-1 min-w-0 w-full"
                   />
