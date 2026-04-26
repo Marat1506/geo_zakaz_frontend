@@ -5,10 +5,9 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useAuthStore } from "@/lib/store/auth-store"
 import { useCartStore } from "@/lib/store/cart-store"
-import { useLogout } from "@/lib/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { User, ShoppingCart, LogIn, UserPlus, Package, LogOut, LayoutDashboard, Store } from "lucide-react"
+import { User, ShoppingCart, LogIn, UserPlus, Package, LayoutDashboard, Store } from "lucide-react"
 import { getImageUrl } from "@/lib/utils/image"
 
 interface HeaderSellerInfo {
@@ -25,7 +24,6 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
   const pathname = usePathname()
   const { isAuthenticated, user } = useAuthStore()
   const items = useCartStore((state) => state.items)
-  const logoutMutation = useLogout()
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const isCustomer = user?.role === "customer"
   const isSeller = user?.role === "seller"
@@ -45,6 +43,11 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
     : isSeller
       ? "/seller/profile"
       : "/profile"
+
+  const onAccountPage =
+    (isCustomer && pathname === "/profile") ||
+    (isSeller && pathname?.startsWith("/seller/profile")) ||
+    (isAdmin && pathname?.startsWith("/admin/dashboard"))
 
   return (
     <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg">
@@ -108,8 +111,9 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
                 </Button>
               </Link>
 
+              {/* Orders: desktop uses nav "My Orders"; mobile-only icon here (no duplicate on md+) */}
               {isCustomer && (
-                <Link href="/orders">
+                <Link href="/orders" className="md:hidden">
                   <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label="My orders">
                     <Package className="h-5 w-5 text-orange-600" />
                   </Button>
@@ -132,22 +136,14 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
                 </Link>
               )}
 
-              <Link href={accountHref}>
-                <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">{user?.name || "Account"}</span>
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => logoutMutation.mutate()}
-                disabled={logoutMutation.isPending}
-                className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Logout</span>
-              </Button>
+              {!onAccountPage && (
+                <Link href={accountHref}>
+                  <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="hidden sm:inline">{user?.name || "Account"}</span>
+                  </Button>
+                </Link>
+              )}
             </>
           )}
 

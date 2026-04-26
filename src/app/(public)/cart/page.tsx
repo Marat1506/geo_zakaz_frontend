@@ -34,25 +34,28 @@ export default function CartPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 flex items-center justify-center px-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="flex justify-center mb-4">
-              <ShoppingCart className="h-16 w-16 text-gray-400" />
-            </div>
-            <CardTitle className="text-2xl">Your cart is empty</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-700 mb-6">
-              Add some delicious items from our menu to get started!
-            </p>
-            <Link href="/menu">
-              <Button className="w-full">
-                Browse Menu
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 flex flex-col">
+        <Header />
+        <div className="flex flex-1 items-center justify-center px-4 py-8">
+          <Card className="w-full max-w-md text-center">
+            <CardHeader>
+              <div className="flex justify-center mb-4">
+                <ShoppingCart className="h-16 w-16 text-gray-400" />
+              </div>
+              <CardTitle className="text-2xl">Your cart is empty</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700 mb-6">
+                Add some delicious items from our menu to get started!
+              </p>
+              <Link href="/menu">
+                <Button className="w-full">
+                  Browse Menu
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
