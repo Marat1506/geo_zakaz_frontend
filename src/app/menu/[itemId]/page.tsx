@@ -73,7 +73,7 @@ export default function MenuItemPage() {
   };
 
   const handleAddToCart = () => {
-    if (!user) {
+    if (!user || user.role !== 'customer') {
       router.push(`/login?redirect=${encodeURIComponent(pathname || `/menu/${itemId}`)}`);
       return;
     }

@@ -14,23 +14,20 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/orders') ||
     pathname.startsWith('/tracking') ||
     pathname.startsWith('/cart') ||
-    pathname.startsWith('/checkout');
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/order-success');
+
+  const loginWithRedirect = (targetPath: string) => {
+    const url = new URL('/login', request.url);
+    url.searchParams.set('redirect', targetPath);
+    return NextResponse.redirect(url);
+  };
 
   if (!accessToken && (isAdminRoute || isSellerRoute || isCustomerRoute)) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return loginWithRedirect(pathname);
   }
 
   if (accessToken) {
-    // If logged in as admin/superadmin, don't allow customer routes (redirect to admin dashboard)
-    if (isCustomerRoute && (userRole === 'admin' || userRole === 'superadmin')) {
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-    }
-    
-    // If logged in as seller, don't allow customer routes (redirect to seller dashboard)
-    if (isCustomerRoute && userRole === 'seller') {
-      return NextResponse.redirect(new URL('/seller/dashboard', request.url));
-    }
-
     // Protection for Admin routes
     if (isAdminRoute && userRole !== 'admin' && userRole !== 'superadmin') {
       return NextResponse.redirect(new URL('/menu', request.url));

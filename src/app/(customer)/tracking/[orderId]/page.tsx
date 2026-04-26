@@ -203,7 +203,6 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
           </CardHeader>
           <CardContent className="space-y-1">
             <p className="text-gray-700"><span className="text-gray-500">Plate:</span> <span className="font-semibold">{order.carPlateNumber}</span></p>
-            <p className="text-gray-700"><span className="text-gray-500">Color:</span> <span className="font-semibold">{order.carColor}</span></p>
             {order.parkingSpot && (
               <p className="text-gray-700"><span className="text-gray-500">Parking:</span> <span className="font-semibold">{order.parkingSpot}</span></p>
             )}

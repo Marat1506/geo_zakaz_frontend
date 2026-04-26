@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
-import { getApiBaseUrl } from '@/lib/api/get-api-base-url';
+import { apiClient } from '@/lib/api/client';
 
 export function usePushSubscription() {
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -34,10 +34,8 @@ export function usePushSubscription() {
       const reg = await navigator.serviceWorker.ready;
       
       // Get VAPID public key
-      const apiUrl = getApiBaseUrl();
-      const res = await fetch(`${apiUrl}/notifications/vapid-public-key`);
-      if (!res.ok) throw new Error('Failed to get VAPID key');
-      const { publicKey } = await res.json();
+      const { data: vapidData } = await apiClient.get('/notifications/vapid-public-key');
+      const publicKey = vapidData.publicKey;
 
       // Subscribe
       const sub = await reg.pushManager.subscribe({
@@ -46,17 +44,7 @@ export function usePushSubscription() {
       });
 
       // Save to backend
-      const token = localStorage.getItem('accessToken');
-      const saveRes = await fetch(`${apiUrl}/notifications/subscribe`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}` 
-        },
-        body: JSON.stringify(sub.toJSON()),
-      });
-
-      if (!saveRes.ok) throw new Error('Failed to save subscription');
+      await apiClient.post('/notifications/subscribe', sub.toJSON());
 
       setPushEnabled(true);
       toast({ title: 'Notifications enabled!', description: 'You will receive updates about orders.' });
@@ -77,11 +65,8 @@ export function usePushSubscription() {
         await sub.unsubscribe();
         
         // Notify backend (optional, backend should handle 410 Gone anyway)
-        const apiUrl = getApiBaseUrl();
-        const token = localStorage.getItem('accessToken');
-        await fetch(`${apiUrl}/notifications/subscribe`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
+        await apiClient.delete('/notifications/subscribe', {
+          data: { endpoint: sub.endpoint },
         });
       }
       setPushEnabled(false);

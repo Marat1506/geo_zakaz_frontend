@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
@@ -35,7 +35,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.js ./
 
 # Install only production dependencies
-RUN npm install --only=production
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Expose port
 EXPOSE 3001

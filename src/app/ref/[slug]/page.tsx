@@ -61,6 +61,7 @@ export default function ReferralPage() {
   const [isCheckingLocation, setIsCheckingLocation] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [locationIssue, setLocationIssue] = useState<string | null>(null);
   const { setLocation } = useGeoStore();
   const { user } = useAuthStore();
   const { addItem } = useCartStore();
@@ -75,7 +76,8 @@ export default function ReferralPage() {
 
     const sellerZones = (zones as PublicZone[]).filter((zone) => zone.sellerId === seller.id);
     if (sellerZones.length === 0) {
-      router.replace('/');
+      setLocationIssue('No active delivery zones are configured for this seller yet.');
+      setIsCheckingLocation(false);
       return;
     }
 
@@ -84,7 +86,8 @@ export default function ReferralPage() {
 
   const verifyLocationForSeller = async (sellerId: string, sellerZones: PublicZone[]) => {
     if (!navigator.geolocation) {
-      router.replace('/');
+      setLocationIssue('Geolocation is not supported on your device/browser.');
+      setIsCheckingLocation(false);
       return;
     }
 
@@ -113,18 +116,23 @@ export default function ReferralPage() {
             : sellerZones[0]?.id || null;
 
           if (!isSellerZone) {
-            router.replace('/');
+            setLocationIssue('You are outside this seller delivery zone. Ordering is unavailable.');
+            setSelectedZoneId(selectedId);
+            setIsCheckingLocation(false);
             return;
           }
 
+          setLocationIssue(null);
           setSelectedZoneId(selectedId);
           setIsCheckingLocation(false);
         } catch {
-          router.replace('/');
+          setLocationIssue('Failed to verify your location. Please try again.');
+          setIsCheckingLocation(false);
         }
       },
       () => {
-        router.replace('/');
+        setLocationIssue('Location permission is required to order from this seller.');
+        setIsCheckingLocation(false);
       },
       { enableHighAccuracy: true, timeout: 8000 }
     );
@@ -146,7 +154,7 @@ export default function ReferralPage() {
   const selectedZone = sellerZones.find((z) => z.id === selectedZoneId);
 
   const handleAddToCart = (item: any) => {
-    if (!user) {
+    if (!user || user.role !== 'customer') {
       router.push(`/login?redirect=${encodeURIComponent(pathname || `/ref/${slug}`)}`);
       return;
     }
@@ -236,7 +244,24 @@ export default function ReferralPage() {
             </Button>
           </div>
 
-          {menuLoading ? (
+          {locationIssue ? (
+            <Card className="border-orange-200 bg-orange-50/50">
+              <CardContent className="py-10 text-center text-gray-700">
+                <p className="font-semibold text-lg mb-2">{locationIssue}</p>
+                <p className="text-sm text-gray-600 mb-4">
+                  Enable location access and refresh this page to continue.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button onClick={() => window.location.reload()} className="bg-orange-500 hover:bg-orange-600">
+                    Retry location check
+                  </Button>
+                  <Link href="/">
+                    <Button variant="outline">Go to home</Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          ) : menuLoading ? (
             <div className="flex items-center justify-center py-12"><LoadingSpinner /></div>
           ) : zoneMenu.length === 0 ? (
             <Card className="border-dashed border-2 border-gray-200 bg-gray-50/50">
@@ -299,13 +324,13 @@ export default function ReferralPage() {
                       disabled={!item.available}
                       className="min-h-[46px] px-5 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95"
                     >
-                      {!user && <Lock className="h-4 w-4 mr-2" />}
-                      {user ? (
+                      {(!user || user.role !== 'customer') && <Lock className="h-4 w-4 mr-2" />}
+                      {user?.role === 'customer' ? (
                         <>
                           <Plus className="h-5 w-5 mr-1" />
                           Add
                         </>
-                      ) : 'Login'}
+                      ) : 'Login as customer'}
                     </Button>
                   </div>
                 </Card>

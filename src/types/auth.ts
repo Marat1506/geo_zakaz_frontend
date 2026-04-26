@@ -12,6 +12,11 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+export interface OptionalAuthTokens {
+  accessToken: string | null;
+  refreshToken: string | null;
+}
+
 export interface LoginCredentials {
   email: string;
   password: string;

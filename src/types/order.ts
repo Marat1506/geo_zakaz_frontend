@@ -30,11 +30,10 @@ export interface Order {
   paymentMethod: PaymentMethod;
   paymentIntentId?: string;
   carPlateNumber: string;
-  carColor: string;
   parkingSpot?: string;
   carPhotoUrl: string;
   estimatedTime: number;
-  zoneId: string;
+  zoneId: string | null;
   sellerId?: string;
   zone?: {
     id: string;

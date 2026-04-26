@@ -134,7 +134,7 @@ export default function DashboardPage() {
                           </div>
                           <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-gray-500">
                             <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 shrink-0" />{new Date(order.createdAt).toLocaleString()}</span>
-                            <span className="flex items-center gap-1"><Car className="h-3.5 w-3.5 shrink-0" />{order.carPlateNumber} · {order.carColor}</span>
+                            <span className="flex items-center gap-1"><Car className="h-3.5 w-3.5 shrink-0" />{order.carPlateNumber}</span>
                             {order.parkingSpot && <span>Parking: {order.parkingSpot}</span>}
                             <span className="flex items-center gap-1"><Package className="h-3.5 w-3.5 shrink-0" />{order.items.length} items</span>
                           </div>

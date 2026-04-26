@@ -6,9 +6,8 @@ import { authApi } from '@/lib/api/endpoints/auth';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { LoginCredentials, RegisterData } from '@/types/auth';
 
-export function useLogin() {
+export function useLogin(redirectPath?: string) {
   const { setAuth } = useAuthStore();
-  const router = useRouter();
 
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => authApi.login(credentials),
@@ -17,16 +16,22 @@ export function useLogin() {
       console.log('User role:', data.user.role);
       setAuth(data.user, data.tokens);
 
-      let redirectPath = '/menu';
-      if (data.user.role === 'admin' || data.user.role === 'superadmin') {
-        redirectPath = '/admin/dashboard';
+      const safeRedirect =
+        redirectPath && redirectPath.startsWith('/') ? redirectPath : undefined;
+
+      let targetPath = '/menu';
+      if (safeRedirect) {
+        // If user came from a deep link (e.g. /ref/:slug), return there for any role.
+        targetPath = safeRedirect;
+      } else if (data.user.role === 'admin' || data.user.role === 'superadmin') {
+        targetPath = '/admin/dashboard';
       } else if (data.user.role === 'seller') {
-        redirectPath = '/seller/dashboard';
+        targetPath = '/seller/dashboard';
       }
 
-      console.log('Redirecting to:', redirectPath);
+      console.log('Redirecting to:', targetPath);
       // Используем window.location чтобы браузер отправил куки в middleware
-      window.location.href = redirectPath;
+      window.location.href = targetPath;
     },
     onError: (error) => {
       console.error('Login mutation error:', error);
@@ -36,18 +41,20 @@ export function useLogin() {
 
 export function useRegister() {
   const { setAuth } = useAuthStore();
-  const router = useRouter();
 
   return useMutation({
     mutationFn: (userData: RegisterData) => authApi.register(userData),
     onSuccess: (data) => {
       // If tokens are empty, it means account is pending approval (Seller)
-      if (!data.tokens.accessToken) {
+      if (!data.tokens.accessToken || !data.tokens.refreshToken) {
         // Just stay on the page or redirect to a "waiting" page
         // The component will handle showing the success message
         return;
       }
-      setAuth(data.user, data.tokens);
+      setAuth(data.user, {
+        accessToken: data.tokens.accessToken,
+        refreshToken: data.tokens.refreshToken,
+      });
       window.location.href = '/menu';
     },
   });

@@ -14,6 +14,7 @@ import { useCheckLocation, usePublicServiceZones } from '@/lib/hooks/use-geo';
 import { useGeoStore } from '@/lib/store/geo-store';
 import { toast } from '@/components/ui/toast';
 import { playSound } from '@/lib/utils/sounds';
+import { apiClient } from '@/lib/api/client';
 
 const DeliveryZoneMap = dynamic(
   () => import('@/components/map/delivery-zone-map').then((mod) => mod.DeliveryZoneMap),
@@ -43,9 +44,17 @@ export default function CheckoutPage() {
     if (items.length === 0) {
       router.push('/cart');
     }
-    // Redirect to login if not authenticated
+    // Guest -> login, authenticated non-customer -> own dashboard.
     if (!user) {
       router.push('/login?redirect=/checkout');
+      return;
+    }
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      router.push('/admin/dashboard');
+      return;
+    }
+    if (user.role === 'seller') {
+      router.push('/seller/dashboard');
     }
   }, [items.length, user, router]);
 
@@ -67,7 +76,7 @@ export default function CheckoutPage() {
         checkLocation.mutate(coords);
       },
       () => {
-        setGeoError('We could not detect your location. You can still place an order, but delivery availability may be limited.');
+        setGeoError('We could not detect your location. Enable geolocation to place an order.');
       },
       {
         enableHighAccuracy: true,
@@ -98,6 +107,24 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!userLocation) {
+      toast({
+        title: 'Location required',
+        description: 'Please allow geolocation to place an order.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!inServiceZone) {
+      toast({
+        title: 'Outside delivery zone',
+        description: 'Ordering is available only inside active seller delivery zones.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -112,48 +139,22 @@ export default function CheckoutPage() {
 
       // Add car information
       formData.append('carPlateNumber', data.carPlateNumber);
-      formData.append('carColor', data.carColor);
       if (data.parkingSpot) {
         formData.append('parkingSpot', data.parkingSpot);
       }
 
-      // Add location: prefer detected user location, fall back to main parking lot
-      if (userLocation) {
-        formData.append('customerLat', String(userLocation.latitude));
-        formData.append('customerLng', String(userLocation.longitude));
-      } else {
-        formData.append('customerLat', '40.7128');
-        formData.append('customerLng', '-74.0060');
-      }
+      // Delivery is allowed only for users inside active service zones.
+      formData.append('customerLat', String(userLocation.latitude));
+      formData.append('customerLng', String(userLocation.longitude));
 
       // Add payment method
       formData.append('paymentMethod', 'cash');
 
-      // Add customerId if user is logged in
-      if (user) {
-        formData.append('customerId', user.id);
-      }
-
       // Add car photo
       formData.append('carPhoto', carPhoto);
-
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/orders`, {
-        method: 'POST',
-        body: formData,
+      const { data: order } = await apiClient.post('/orders', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-
-      if (!response.ok) {
-        let message = 'Failed to place order. Please try again.';
-        try {
-          const errorData = await response.json();
-          if (errorData?.message) message = errorData.message;
-        } catch {
-          // non-JSON response
-        }
-        throw new Error(message);
-      }
-
-      const order = await response.json();
 
       playSound('order_placed');
       // Clear cart after successful order
@@ -175,7 +176,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (items.length === 0 || !user) return null;
+  if (items.length === 0 || !user || user.role !== 'customer') return null;
 
   const handleBackToCart = () => {
     router.push('/cart');
@@ -249,12 +250,12 @@ export default function CheckoutPage() {
                   />
                   {inServiceZone
                     ? `You are inside our delivery zone${zoneName ? ` (“${zoneName}”)` : ''}.`
-                    : 'You are currently outside our delivery zone. You can still place an order for pickup.'}
+                    : 'You are currently outside our delivery zone. Ordering is unavailable.'}
                 </p>
               )}
               {zonesError && (
                 <p className="text-xs text-gray-500">
-                  We could not load the delivery zone map right now. You can still complete your order.
+                  We could not load delivery zones right now. Please try again later.
                 </p>
               )}
             </div>
@@ -386,7 +387,7 @@ export default function CheckoutPage() {
                   type="submit"
                   form="checkout-form"
                   className="w-full h-14 text-xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 shadow-lg"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !userLocation || !inServiceZone}
                 >
                   {isSubmitting ? (
                     <>

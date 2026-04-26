@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User, AuthTokens } from '@/types/auth';
+import { setTokens, clearTokens } from '@/lib/api/client';
 
 interface AuthState {
   user: User | null;
@@ -19,29 +20,20 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       setAuth: (user, tokens) => {
+        setTokens(tokens.accessToken, tokens.refreshToken);
+
         if (typeof window !== 'undefined') {
-          localStorage.setItem('accessToken', tokens.accessToken);
-          localStorage.setItem('refreshToken', tokens.refreshToken);
-
-          // Set cookies for middleware
+          // Keep only role cookie client-visible for Next middleware role routing.
           const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-          document.cookie = `accessToken=${tokens.accessToken}; path=/; max-age=3600; SameSite=Lax${secure}`;
-          document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=604800; SameSite=Lax${secure}`;
           document.cookie = `userRole=${user.role}; path=/; max-age=3600; SameSite=Lax${secure}`;
-
-          console.log('Cookies set for role:', user.role);
         }
         set({ user, tokens, isAuthenticated: true });
       },
 
       clearAuth: () => {
+        clearTokens();
+
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('refreshToken');
-          
-          // Clear cookies
-          document.cookie = 'accessToken=; path=/; max-age=0; SameSite=Lax';
-          document.cookie = 'refreshToken=; path=/; max-age=0; SameSite=Lax';
           document.cookie = 'userRole=; path=/; max-age=0; SameSite=Lax';
         }
         set({ user: null, tokens: null, isAuthenticated: false });

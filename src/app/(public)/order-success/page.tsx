@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, MapPin } from 'lucide-react';
 import Link from 'next/link';
+import { apiClient } from '@/lib/api/client';
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
@@ -20,8 +21,8 @@ function OrderSuccessContent() {
       return;
     }
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api'}/orders/${orderId}`)
-      .then(res => res.json())
+    apiClient.get(`/orders/${orderId}`)
+      .then(res => res.data)
       .then(data => {
         setOrder(data);
         setLoading(false);
@@ -66,7 +67,7 @@ function OrderSuccessContent() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Total Amount:</span>
-                      <span className="font-bold text-orange-600 text-xl">${order.totalAmount.toFixed(2)}</span>
+                      <span className="font-bold text-orange-600 text-xl">${Number(order.totalAmount).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Status:</span>
@@ -91,7 +92,6 @@ function OrderSuccessContent() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-gray-900"><span className="font-semibold">Plate:</span> {order.carPlateNumber}</p>
-                    <p className="text-gray-900"><span className="font-semibold">Color:</span> {order.carColor}</p>
                     {order.parkingSpot && (
                       <p className="text-gray-900"><span className="font-semibold">Parking:</span> {order.parkingSpot}</p>
                     )}
@@ -104,7 +104,7 @@ function OrderSuccessContent() {
                     {order.items?.map((item: any) => (
                       <div key={item.id} className="flex justify-between">
                         <span className="text-gray-700">{item.quantity}x {item.menuItemName}</span>
-                        <span className="font-semibold text-gray-900">${item.subtotal.toFixed(2)}</span>
+                        <span className="font-semibold text-gray-900">${Number(item.subtotal).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

@@ -76,7 +76,10 @@ export default function HomePage() {
   const selectedZone = zones.find((z: any) => z.id === selectedZoneId);
 
   const handleAddToCart = (item: any) => {
-    if (!user) { router.push('/login?redirect=/'); return; }
+    if (!user || user.role !== 'customer') {
+      router.push('/login?redirect=/');
+      return;
+    }
     addItem({ ...item, price: Number(item.price) });
     playSound('cart_add');
   };
@@ -191,13 +194,13 @@ export default function HomePage() {
                   disabled={!item.available}
                   className="min-h-[48px] px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl shadow-lg shadow-orange-200 transition-all hover:scale-105 active:scale-95"
                 >
-                  {!user && <Lock className="h-4 w-4 mr-2" />}
-                  {user ? (
+                  {(!user || user.role !== 'customer') && <Lock className="h-4 w-4 mr-2" />}
+                  {user?.role === 'customer' ? (
                     <>
                       <Plus className="h-5 w-5 mr-1" />
                       Add to Cart
                     </>
-                  ) : 'Login to Order'}
+                  ) : 'Login as Customer'}
                 </Button>
               </div>
             </Card>

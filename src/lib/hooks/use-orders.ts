@@ -1,23 +1,16 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ordersApi } from '@/lib/api/endpoints/orders';
+import { CreateOrderRequest, ordersApi } from '@/lib/api/endpoints/orders';
 import { useCartStore } from '@/lib/store/cart-store';
 import { OrderStatus } from '@/types/order';
-import { Location } from '@/types/geo';
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   const { clearCart } = useCartStore();
 
   return useMutation({
-    mutationFn: (data: {
-      deliveryAddress: string;
-      deliveryLocation: Location;
-    }) => {
-      const cart = useCartStore.getState();
-      return ordersApi.createOrder({ cart, ...data });
-    },
+    mutationFn: (data: CreateOrderRequest) => ordersApi.createOrder(data),
     onSuccess: () => {
       clearCart();
       queryClient.invalidateQueries({ queryKey: ['orders'] });

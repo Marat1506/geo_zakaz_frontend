@@ -15,11 +15,12 @@ import { useEffect, Suspense } from 'react';
 import { useAuthStore } from '@/lib/store/auth-store';
 
 function LoginForm() {
-  const login = useLogin();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
-  const redirect = searchParams.get('redirect') || '/profile';
+  const redirectParam = searchParams.get('redirect');
+  const redirect = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/profile';
+  const login = useLogin(redirect);
 
   useEffect(() => {
     if (user) {

@@ -19,6 +19,14 @@ export default function CartPage() {
   const handleCheckout = () => {
     if (!user) {
       router.push('/login?redirect=/checkout');
+      return;
+    }
+    if (user.role === 'admin' || user.role === 'superadmin') {
+      router.push('/admin/dashboard');
+      return;
+    }
+    if (user.role === 'seller') {
+      router.push('/seller/dashboard');
     } else {
       router.push('/checkout');
     }
@@ -163,8 +171,8 @@ export default function CartPage() {
               </CardContent>
               <CardFooter>
                 <Button onClick={handleCheckout} className="w-full" size="lg">
-                  {!user && <Lock className="mr-2 h-5 w-5" />}
-                  {user ? 'Proceed to Checkout' : 'Login to Checkout'}
+                  {(!user || user.role !== 'customer') && <Lock className="mr-2 h-5 w-5" />}
+                  {user?.role === 'customer' ? 'Proceed to Checkout' : 'Login as Customer to Checkout'}
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </CardFooter>

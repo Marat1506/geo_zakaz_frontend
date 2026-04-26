@@ -107,6 +107,177 @@ export default function SellerProfilePage() {
     }
   };
 
+  const loadImage = (src: string): Promise<HTMLImageElement> =>
+    new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+
+  const downloadBusinessCardAsImage = async (
+    format: 'png' | 'jpeg',
+    preset: 'card' | 'a4' = 'card',
+  ) => {
+    try {
+      const qrResponse = await apiClient.get<{ qrCode: string; referralUrl: string }>('/auth/seller/qr-code');
+      const qrImg = await loadImage(qrResponse.data.qrCode);
+      const logoSrc = getImageUrl(profile.shopLogo) || '';
+      const logoImg = logoSrc ? await loadImage(logoSrc).catch(() => null) : null;
+
+      const width = preset === 'a4' ? 2480 : 1200;
+      const height = preset === 'a4' ? 3508 : 1700;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas not supported');
+
+      // Background
+      ctx.fillStyle = '#f5f5f5';
+      ctx.fillRect(0, 0, width, height);
+
+      // Card
+      const cardX = preset === 'a4' ? 140 : 100;
+      const cardY = preset === 'a4' ? 140 : 80;
+      const cardW = width - cardX * 2;
+      const cardH = height - cardY * 2;
+      const radius = 24;
+      ctx.beginPath();
+      ctx.moveTo(cardX + radius, cardY);
+      ctx.lineTo(cardX + cardW - radius, cardY);
+      ctx.quadraticCurveTo(cardX + cardW, cardY, cardX + cardW, cardY + radius);
+      ctx.lineTo(cardX + cardW, cardY + cardH - radius);
+      ctx.quadraticCurveTo(cardX + cardW, cardY + cardH, cardX + cardW - radius, cardY + cardH);
+      ctx.lineTo(cardX + radius, cardY + cardH);
+      ctx.quadraticCurveTo(cardX, cardY + cardH, cardX, cardY + cardH - radius);
+      ctx.lineTo(cardX, cardY + radius);
+      ctx.quadraticCurveTo(cardX, cardY, cardX + radius, cardY);
+      ctx.closePath();
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+
+      // Logo
+      const centerX = width / 2;
+      if (logoImg) {
+        const logoSize = preset === 'a4' ? 280 : 170;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(centerX, preset === 'a4' ? 420 : 235, logoSize / 2, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(
+          logoImg,
+          centerX - logoSize / 2,
+          preset === 'a4' ? 280 : 150,
+          logoSize,
+          logoSize,
+        );
+        ctx.restore();
+      }
+
+      // Shop name and owner
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff8c00';
+      ctx.font = preset === 'a4' ? 'bold 86px Arial' : 'bold 56px Arial';
+      ctx.fillText(profile.shopName || 'Shop', centerX, preset === 'a4' ? 660 : 380);
+
+      ctx.fillStyle = '#666666';
+      ctx.font = preset === 'a4' ? '42px Arial' : '28px Arial';
+      ctx.fillText(
+        profile.contactEmail ? profile.contactEmail.split('@')[0] : 'Seller',
+        centerX,
+        preset === 'a4' ? 730 : 425,
+      );
+
+      if (profile.shopDescription) {
+        ctx.fillStyle = '#444444';
+        ctx.font = preset === 'a4' ? '36px Arial' : '24px Arial';
+        ctx.fillText(
+          profile.shopDescription.slice(0, preset === 'a4' ? 90 : 70),
+          centerX,
+          preset === 'a4' ? 820 : 480,
+        );
+      }
+
+      // Contact box
+      ctx.fillStyle = '#fff5e6';
+      const contactX = preset === 'a4' ? 360 : 220;
+      const contactY = preset === 'a4' ? 920 : 530;
+      const contactW = width - contactX * 2;
+      const contactH = preset === 'a4' ? 280 : 170;
+      ctx.fillRect(contactX, contactY, contactW, contactH);
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#333333';
+      ctx.font = preset === 'a4' ? '40px Arial' : '28px Arial';
+      if (profile.contactPhone) {
+        ctx.fillText(`Phone: ${profile.contactPhone}`, contactX + 30, contactY + (preset === 'a4' ? 105 : 65));
+      }
+      if (profile.contactEmail) {
+        ctx.fillText(`Email: ${profile.contactEmail}`, contactX + 30, contactY + (preset === 'a4' ? 190 : 115));
+      }
+
+      // Separator
+      ctx.strokeStyle = '#ff8c00';
+      ctx.setLineDash([12, 10]);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      const sepY = preset === 'a4' ? 1280 : 760;
+      const sepPad = preset === 'a4' ? 360 : 220;
+      ctx.moveTo(sepPad, sepY);
+      ctx.lineTo(width - sepPad, sepY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // QR title
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#ff8c00';
+      ctx.font = preset === 'a4' ? 'bold 62px Arial' : 'bold 40px Arial';
+      ctx.fillText('Scan to order', centerX, preset === 'a4' ? 1400 : 840);
+
+      // QR frame + image
+      const qrSize = preset === 'a4' ? 680 : 360;
+      const qrX = centerX - qrSize / 2;
+      const qrY = preset === 'a4' ? 1480 : 880;
+      ctx.fillStyle = '#ffffff';
+      const framePad = preset === 'a4' ? 30 : 20;
+      ctx.fillRect(qrX - framePad, qrY - framePad, qrSize + framePad * 2, qrSize + framePad * 2);
+      ctx.strokeStyle = '#ff8c00';
+      ctx.lineWidth = preset === 'a4' ? 8 : 6;
+      ctx.strokeRect(qrX - framePad, qrY - framePad, qrSize + framePad * 2, qrSize + framePad * 2);
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+      ctx.fillStyle = '#666666';
+      ctx.font = preset === 'a4' ? '34px Arial' : '22px Arial';
+      ctx.fillText(
+        'Point your camera to this QR code',
+        centerX,
+        qrY + qrSize + (preset === 'a4' ? 110 : 70),
+      );
+
+      const mime = format === 'png' ? 'image/png' : 'image/jpeg';
+      const quality = format === 'png' ? 1 : 0.92;
+      const dataUrl = canvas.toDataURL(mime, quality);
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = preset === 'a4' ? `business-card-a4.${format}` : `business-card.${format}`;
+      a.click();
+      toast({
+        title:
+          preset === 'a4'
+            ? `Business card A4 downloaded as ${format.toUpperCase()}!`
+            : `Business card downloaded as ${format.toUpperCase()}!`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error?.response?.data?.message || 'Failed to generate image business card',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const copyReferralLink = () => {
     const link = `${window.location.origin}/ref/${savedSlug}`;
     navigator.clipboard.writeText(link);
@@ -296,6 +467,31 @@ export default function SellerProfilePage() {
                 </Button>
                 <Button onClick={downloadBusinessCard} variant="outline" className="w-full sm:flex-1">
                   Download Business Card
+                </Button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={() => downloadBusinessCardAsImage('png')}
+                  variant="outline"
+                  className="w-full sm:flex-1"
+                >
+                  Download as PNG
+                </Button>
+                <Button
+                  onClick={() => downloadBusinessCardAsImage('jpeg')}
+                  variant="outline"
+                  className="w-full sm:flex-1"
+                >
+                  Download as JPEG
+                </Button>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  onClick={() => downloadBusinessCardAsImage('png', 'a4')}
+                  variant="outline"
+                  className="w-full sm:flex-1"
+                >
+                  Download A4 (PNG)
                 </Button>
               </div>
 

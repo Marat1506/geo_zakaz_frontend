@@ -2,12 +2,13 @@
 
 import * as React from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { useAuthStore } from "@/lib/store/auth-store"
 import { useCartStore } from "@/lib/store/cart-store"
 import { useLogout } from "@/lib/hooks/use-auth"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { User, ShoppingCart, LogIn, UserPlus, Package, LogOut } from "lucide-react"
+import { User, ShoppingCart, LogIn, UserPlus, Package, LogOut, LayoutDashboard, Store } from "lucide-react"
 import { getImageUrl } from "@/lib/utils/image"
 
 interface HeaderSellerInfo {
@@ -21,15 +22,29 @@ interface HeaderProps {
 }
 
 export function Header({ sellerInfo }: HeaderProps = {}) {
+  const pathname = usePathname()
   const { isAuthenticated, user } = useAuthStore()
   const items = useCartStore((state) => state.items)
   const logoutMutation = useLogout()
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const isCustomer = user?.role === "customer"
+  const isSeller = user?.role === "seller"
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin"
   const brandName = sellerInfo?.shopName || "LotFood"
   const brandLogo = sellerInfo?.shopLogo
   const brandDescription = sellerInfo?.shopDescription || ""
   const isSellerBranded = Boolean(sellerInfo)
+
+  const authRedirect =
+    pathname && pathname.startsWith("/") ? encodeURIComponent(pathname) : encodeURIComponent("/")
+  const loginHref = `/login?redirect=${authRedirect}`
+  const registerHref = `/register?redirect=${authRedirect}`
+
+  const accountHref = isAdmin
+    ? "/admin/dashboard"
+    : isSeller
+      ? "/seller/profile"
+      : "/profile"
 
   return (
     <header className="sticky top-0 z-50 w-full bg-gradient-to-r from-orange-500 to-yellow-500 shadow-lg">
@@ -79,8 +94,8 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
           )}
         </nav>
 
-        <div className="flex items-center gap-2 ml-auto shrink-0">
-          {isAuthenticated && isCustomer && (
+        <div className="flex items-center gap-2 ml-auto shrink-0 max-w-[55vw] sm:max-w-none overflow-x-auto">
+          {isAuthenticated && (
             <>
               <Link href="/cart">
                 <Button variant="outline" size="icon" className="relative min-h-[44px] min-w-[44px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label="Cart">
@@ -93,10 +108,34 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
                 </Button>
               </Link>
 
-              <Link href="/profile">
+              {isCustomer && (
+                <Link href="/orders">
+                  <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label="My orders">
+                    <Package className="h-5 w-5 text-orange-600" />
+                  </Button>
+                </Link>
+              )}
+
+              {isAdmin && (
+                <Link href="/admin/dashboard">
+                  <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label="Admin dashboard">
+                    <LayoutDashboard className="h-5 w-5 text-orange-600" />
+                  </Button>
+                </Link>
+              )}
+
+              {isSeller && (
+                <Link href="/seller/dashboard">
+                  <Button variant="outline" size="icon" className="min-h-[44px] min-w-[44px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label="Seller dashboard">
+                    <Store className="h-5 w-5 text-orange-600" />
+                  </Button>
+                </Link>
+              )}
+
+              <Link href={accountHref}>
                 <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2">
                   <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">{user?.name || "Profile"}</span>
+                  <span className="hidden sm:inline">{user?.name || "Account"}</span>
                 </Button>
               </Link>
               <Button
@@ -114,13 +153,13 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
 
           {!isAuthenticated && (
             <>
-              <Link href="/login">
+              <Link href={loginHref}>
                 <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2">
                   <LogIn className="h-4 w-4" />
                   <span className="hidden sm:inline">Login</span>
                 </Button>
               </Link>
-              <Link href="/register">
+              <Link href={registerHref}>
                 <Button className="bg-orange-600 hover:bg-orange-700 text-white min-h-[44px] gap-2 border-2 border-orange-600">
                   <UserPlus className="h-4 w-4" />
                   <span className="hidden sm:inline">Sign up</span>

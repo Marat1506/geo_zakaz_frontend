@@ -1,5 +1,11 @@
 import { apiClient } from '../client';
-import { LoginCredentials, RegisterData, AuthTokens, User } from '@/types/auth';
+import {
+  LoginCredentials,
+  RegisterData,
+  AuthTokens,
+  OptionalAuthTokens,
+  User,
+} from '@/types/auth';
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<{ user: User; tokens: AuthTokens }> => {
@@ -26,7 +32,7 @@ export const authApi = {
     passportMain?: File;
     passportRegistration?: File;
     selfie?: File;
-  }): Promise<{ user: User; tokens: AuthTokens }> => {
+  }): Promise<{ user: User; tokens: OptionalAuthTokens }> => {
     const { confirmPassword: _, passportMain, passportRegistration, selfie, ...payload } = userData as any;
 
     // Always use FormData to support file uploads
@@ -58,8 +64,7 @@ export const authApi = {
   },
 
   logout: async (): Promise<void> => {
-    // No server-side logout endpoint — just clear local state
-    return Promise.resolve();
+    await apiClient.post('/auth/logout');
   },
 
   getCurrentUser: async (): Promise<User> => {
