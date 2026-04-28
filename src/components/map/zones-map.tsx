@@ -15,6 +15,8 @@ interface Zone {
   active?: boolean;
 }
 
+const ZOOM_NEAR_USER = 14;
+
 interface ZonesMapProps {
   zones: Zone[];
   userLocation?: { lat: number; lng: number } | null;
@@ -22,12 +24,24 @@ interface ZonesMapProps {
   currentZoneId?: string | null;
   onZoneClick?: (zoneId: string) => void;
   height?: string;
+  /** When true, avoid fitting the whole world to all zones; center on the user once geolocation is known (visitor outside coverage). */
+  focusUserNearMe?: boolean;
 }
 
-export function ZonesMap({ zones, userLocation, selectedZoneId, currentZoneId, onZoneClick, height = '50vh' }: ZonesMapProps) {
+export function ZonesMap({
+  zones,
+  userLocation,
+  selectedZoneId,
+  currentZoneId,
+  onZoneClick,
+  height = '50vh',
+  focusUserNearMe = false,
+}: ZonesMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const layersRef = useRef<Map<string, L.Layer>>(new Map());
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const didCenterOnUserRef = useRef(false);
+  const prevSelectedZoneIdRef = useRef<string | null | undefined>(undefined);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -139,13 +153,15 @@ export function ZonesMap({ zones, userLocation, selectedZoneId, currentZoneId, o
       }
     });
 
-    if (bounds.length > 0 && !selectedZoneId) {
+    const skipGlobalFitForDistantUser = Boolean(focusUserNearMe && userLocation);
+
+    if (bounds.length > 0 && !selectedZoneId && !skipGlobalFitForDistantUser) {
       try {
         const allBounds = L.latLngBounds(bounds.flat() as any);
         map.fitBounds(allBounds, { padding: [40, 40] });
       } catch { }
     }
-  }, [isClient, zones, selectedZoneId, onZoneClick]);
+  }, [isClient, zones, selectedZoneId, onZoneClick, focusUserNearMe, userLocation]);
 
   // Pan to selected zone
   useEffect(() => {
@@ -161,12 +177,20 @@ export function ZonesMap({ zones, userLocation, selectedZoneId, currentZoneId, o
     if (!isClient || !mapRef.current || !userLocation) return;
     const map = mapRef.current;
 
+    if (prevSelectedZoneIdRef.current && !selectedZoneId) {
+      didCenterOnUserRef.current = false;
+    }
+    prevSelectedZoneIdRef.current = selectedZoneId ?? null;
+
     const icon = L.divIcon({
-      html: '<div style="width:14px;height:14px;background:#22c55e;border:3px solid white;border-radius:50%;box-shadow:0 0 6px rgba(0,0,0,0.4)"></div>',
+      html: '<div style="width:14px;height:14px;background:#2563eb;border:3px solid white;border-radius:50%;box-shadow:0 0 6px rgba(0,0,0,0.4)"></div>',
       className: '',
       iconSize: [14, 14],
       iconAnchor: [7, 7],
     });
+
+    const shouldPrioritizeUser =
+      !selectedZoneId && (focusUserNearMe || zones.length === 0);
 
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
@@ -174,14 +198,13 @@ export function ZonesMap({ zones, userLocation, selectedZoneId, currentZoneId, o
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon })
         .addTo(map)
         .bindTooltip('You are here', { direction: 'top' });
-
-      // Center map on user location with city zoom when location first becomes available
-      // Only if no zones are selected (to avoid disrupting zone viewing)
-      if (!selectedZoneId && zones.length === 0) {
-        map.setView([userLocation.lat, userLocation.lng], 12, { animate: true });
-      }
     }
-  }, [isClient, userLocation, selectedZoneId, zones.length]);
+
+    if (shouldPrioritizeUser && !didCenterOnUserRef.current) {
+      map.flyTo([userLocation.lat, userLocation.lng], ZOOM_NEAR_USER, { animate: true, duration: 0.75 });
+      didCenterOnUserRef.current = true;
+    }
+  }, [isClient, userLocation, selectedZoneId, zones.length, focusUserNearMe]);
 
   if (!isClient) return <div style={{ height }} className="bg-gray-100 flex items-center justify-center"><span className="text-gray-500">Loading map...</span></div>;
 

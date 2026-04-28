@@ -95,6 +95,7 @@ export default function HomePage() {
         currentZoneId={currentZoneId}
         onZoneClick={(id) => setSelectedZoneId(id === selectedZoneId ? null : id)}
         height="100%"
+        focusUserNearMe={!inServiceZone}
       />
     )
   );
