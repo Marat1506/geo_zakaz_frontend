@@ -11,12 +11,26 @@ import { apiClient } from '@/lib/api/client';
 import { toast } from '@/components/ui/toast';
 import { useUploadImage } from '@/lib/hooks/use-menu';
 import { getImageUrl } from '@/lib/utils/image';
+import { getApiErrorMessage } from '@/lib/api/get-api-error-message';
+
+type SellerProfileData = {
+  shopName: string;
+  shopDescription: string;
+  shopLogo: string;
+  contactPhone: string;
+  contactEmail: string;
+  contactAddress: string;
+  slug: string;
+  referralCode: string;
+  referralVisits: number;
+  referralOrders: number;
+};
 
 export default function SellerProfilePage() {
   const uploadImage = useUploadImage();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<SellerProfileData>({
     shopName: '',
     shopDescription: '',
     shopLogo: '',
@@ -38,7 +52,7 @@ export default function SellerProfilePage() {
 
   const loadProfile = async () => {
     try {
-      const response = await apiClient.get('/auth/seller/profile');
+      const response = await apiClient.get<SellerProfileData>('/auth/seller/profile');
       setProfile(response.data);
       setSavedSlug(response.data?.slug || '');
     } catch (error) {
@@ -62,7 +76,7 @@ export default function SellerProfilePage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const response = await apiClient.patch('/auth/seller/profile', {
+      const response = await apiClient.patch<Partial<SellerProfileData>>('/auth/seller/profile', {
         shopName: profile.shopName,
         shopDescription: profile.shopDescription,
         shopLogo: profile.shopLogo,
@@ -74,8 +88,12 @@ export default function SellerProfilePage() {
       setSavedSlug(response.data?.slug || profile.slug || '');
       toast({ title: 'Profile updated successfully!' });
       loadProfile();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to update profile', variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: getApiErrorMessage(error, 'Failed to update profile'),
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }
@@ -85,8 +103,12 @@ export default function SellerProfilePage() {
     try {
       const response = await apiClient.get<{ qrCode: string }>('/auth/seller/qr-code');
       setQrCode(response.data.qrCode);
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to generate QR code', variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: getApiErrorMessage(error, 'Failed to generate QR code'),
+        variant: 'destructive',
+      });
     }
   };
 
@@ -102,8 +124,12 @@ export default function SellerProfilePage() {
       a.click();
       window.URL.revokeObjectURL(url);
       toast({ title: 'Business card downloaded!' });
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to generate business card', variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: getApiErrorMessage(error, 'Failed to generate business card'),
+        variant: 'destructive',
+      });
     }
   };
 

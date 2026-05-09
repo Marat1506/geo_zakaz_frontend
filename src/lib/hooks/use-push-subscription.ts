@@ -34,7 +34,9 @@ export function usePushSubscription() {
       const reg = await navigator.serviceWorker.ready;
       
       // Get VAPID public key
-      const { data: vapidData } = await apiClient.get('/notifications/vapid-public-key');
+      const { data: vapidData } = await apiClient.get<{ publicKey: string }>(
+        '/notifications/vapid-public-key',
+      );
       const publicKey = vapidData.publicKey;
 
       // Subscribe

@@ -1,16 +1,20 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRegister } from '@/lib/hooks/use-auth';
+import { useRegister, useVerifyRegistrationEmail } from '@/lib/hooks/use-auth';
+import { authApi } from '@/lib/api/endpoints/auth';
 import { registerSchema, RegisterFormData } from '@/lib/validations/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
-import { UserPlus, Clock, Camera, FileText, Upload, X } from 'lucide-react';
+import { UserPlus, Clock, FileText, Upload, X, Mail } from 'lucide-react';
+import { FaceScanner } from '@/components/face/FaceScanner';
+import { preloadFaceModels } from '@/lib/face/preload';
+import { getApiErrorMessage } from '@/lib/api/get-api-error-message';
 
 interface DocFile {
   file: File;
@@ -74,10 +78,18 @@ function DocUpload({
 
 export default function RegisterPage() {
   const registerMutation = useRegister();
+  const verifyMutation = useVerifyRegistrationEmail();
+  const [registrationStep, setRegistrationStep] = useState<'form' | 'verify' | 'sellerDone'>('form');
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [resending, setResending] = useState(false);
+  const [resendHint, setResendHint] = useState<string | null>(null);
   const [passportMain, setPassportMain] = useState<DocFile | null>(null);
   const [passportReg, setPassportReg] = useState<DocFile | null>(null);
   const [selfie, setSelfie] = useState<DocFile | null>(null);
   const [docError, setDocError] = useState<string | null>(null);
+  const [faceDescriptors, setFaceDescriptors] = useState<number[][] | null>(null);
+  const [faceError, setFaceError] = useState<string | null>(null);
 
   const {
     register: registerField,
@@ -92,7 +104,36 @@ export default function RegisterPage() {
 
   const selectedRole = watch('role');
 
-  if (registerMutation.isSuccess && !registerMutation.data?.tokens.accessToken) {
+  useEffect(() => {
+    preloadFaceModels().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setFaceDescriptors(null);
+    setFaceError(null);
+  }, [selectedRole]);
+
+  useEffect(() => {
+    const d = registerMutation.data;
+    if (registerMutation.isSuccess && d?.requiresEmailVerification && registrationStep === 'form') {
+      setPendingEmail(d.user.email);
+      setVerificationCode('');
+      setRegistrationStep('verify');
+    }
+  }, [registerMutation.isSuccess, registerMutation.data, registrationStep]);
+
+  useEffect(() => {
+    const d = verifyMutation.data;
+    if (
+      verifyMutation.isSuccess &&
+      d &&
+      (!d.tokens.accessToken || !d.tokens.refreshToken)
+    ) {
+      setRegistrationStep('sellerDone');
+    }
+  }, [verifyMutation.isSuccess, verifyMutation.data]);
+
+  if (registrationStep === 'sellerDone') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 px-4 py-12">
         <Card className="w-full max-w-md shadow-2xl border-4 border-blue-200">
@@ -118,7 +159,110 @@ export default function RegisterPage() {
     );
   }
 
+  if (registrationStep === 'verify') {
+    const onVerifySubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      const digits = verificationCode.replace(/\D/g, '').slice(0, 6);
+      if (digits.length !== 6) return;
+      verifyMutation.mutate({ email: pendingEmail, code: digits });
+    };
+
+    const handleResend = async () => {
+      setResending(true);
+      setResendHint(null);
+      try {
+        await authApi.resendRegistrationCode(pendingEmail);
+        setResendHint('If this address is correct, check your inbox for a new code.');
+      } catch {
+        setResendHint('Could not resend. Try again in a moment.');
+      } finally {
+        setResending(false);
+      }
+    };
+
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 px-4 py-12">
+        <div className="w-full max-w-lg mb-6">
+          <Link href="/">
+            <Button variant="ghost" className="text-orange-600 hover:bg-orange-100 font-bold gap-2 min-h-[48px]">
+              ← Back to Home
+            </Button>
+          </Link>
+        </div>
+
+        <Card className="w-full max-w-lg shadow-2xl border-4 border-orange-200">
+          <CardHeader className="bg-gradient-to-r from-orange-400 to-yellow-400 text-white">
+            <div className="flex justify-center mb-2"><Mail className="h-12 w-12" /></div>
+            <CardTitle className="text-3xl text-center">Verify your email</CardTitle>
+            <p className="text-center text-orange-100 mt-2">Step 2 of 2 — enter the 6-digit code we sent you</p>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <form onSubmit={onVerifySubmit} className="space-y-4">
+              <p className="text-sm text-gray-600 text-center break-all">
+                Code sent to <span className="font-semibold text-gray-800">{pendingEmail}</span>
+              </p>
+              <div>
+                <Label htmlFor="code" className="text-gray-700 font-semibold">Verification code *</Label>
+                <Input
+                  id="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={verificationCode}
+                  onChange={(ev) => setVerificationCode(ev.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="mt-1 h-14 text-center text-2xl tracking-[0.5em] border-2 border-orange-300 focus:border-orange-500 font-mono"
+                />
+              </div>
+
+              {verifyMutation.isError && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-600 text-center">
+                    {getApiErrorMessage(verifyMutation.error, 'Verification failed. Check the code and try again.')}
+                  </p>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full h-14 text-lg font-bold bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 shadow-lg"
+                disabled={verifyMutation.isPending || verificationCode.replace(/\D/g, '').length !== 6}
+              >
+                {verifyMutation.isPending ? 'Verifying...' : 'Confirm email'}
+              </Button>
+
+              <div className="flex flex-col items-center gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  disabled={resending}
+                  onClick={() => void handleResend()}
+                >
+                  {resending ? 'Sending...' : 'Resend code'}
+                </Button>
+                {resendHint && <p className="text-xs text-gray-600 text-center">{resendHint}</p>}
+              </div>
+
+              <div className="text-center pt-4 border-t-2 border-orange-200">
+                <Link href="/login" className="text-orange-600 hover:text-orange-700 font-semibold underline text-sm">
+                  Back to Login
+                </Link>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const onSubmit = (data: RegisterFormData) => {
+    if (!faceDescriptors || faceDescriptors.length < 3) {
+      setFaceError('Verify your face: capture three samples below using your camera.');
+      return;
+    }
+    setFaceError(null);
+
     if (selectedRole === 'seller') {
       if (!passportMain || !passportReg || !selfie) {
         setDocError('Please upload all required documents: passport (2 pages) and selfie.');
@@ -128,6 +272,7 @@ export default function RegisterPage() {
     setDocError(null);
     registerMutation.mutate({
       ...data,
+      faceDescriptors,
       passportMain: passportMain?.file,
       passportRegistration: passportReg?.file,
       selfie: selfie?.file,
@@ -216,6 +361,36 @@ export default function RegisterPage() {
                 className="mt-1 h-12 border-2 border-orange-300 focus:border-orange-500" />
             </div>
 
+            {/* Face verification — required for all new accounts */}
+            <div className="mt-6 space-y-3 border-t-2 border-orange-200 pt-5">
+              <div className="flex items-center gap-2 text-orange-800">
+                <UserPlus className="h-5 w-5" />
+                <h3 className="font-bold text-base">Face verification *</h3>
+              </div>
+              <p className="text-xs text-gray-600 bg-orange-50 p-3 rounded-lg border border-orange-100">
+                Capture three samples (look at the camera, tap Capture each time). This enables signing in with your face on the login page. Uses your browser only — demo-grade security.
+              </p>
+              {faceError && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-600">{faceError}</p>
+                </div>
+              )}
+              <FaceScanner
+                key={selectedRole}
+                sampleTarget={3}
+                disabled={registerMutation.isPending}
+                onComplete={(samples) => {
+                  setFaceDescriptors(samples);
+                  setFaceError(null);
+                }}
+              />
+              {faceDescriptors && faceDescriptors.length >= 3 && (
+                <p className="text-sm font-medium text-green-700 text-center">
+                  ✓ Face samples captured — you can submit the form.
+                </p>
+              )}
+            </div>
+
             {/* Seller documents */}
             {selectedRole === 'seller' && (
               <div className="mt-6 space-y-5 border-t-2 border-blue-100 pt-5">
@@ -259,7 +434,9 @@ export default function RegisterPage() {
 
             {registerMutation.isError && (
               <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3">
-                <p className="text-sm text-red-600 text-center">Registration failed. Please try again.</p>
+                <p className="text-sm text-red-600 text-center">
+                  {getApiErrorMessage(registerMutation.error, 'Registration failed. Please try again.')}
+                </p>
               </div>
             )}
 

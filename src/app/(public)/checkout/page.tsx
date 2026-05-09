@@ -15,6 +15,7 @@ import { useGeoStore } from '@/lib/store/geo-store';
 import { toast } from '@/components/ui/toast';
 import { playSound } from '@/lib/utils/sounds';
 import { apiClient } from '@/lib/api/client';
+import { Order } from '@/types/order';
 
 const DeliveryZoneMap = dynamic(
   () => import('@/components/map/delivery-zone-map').then((mod) => mod.DeliveryZoneMap),
@@ -152,9 +153,7 @@ export default function CheckoutPage() {
 
       // Add car photo
       formData.append('carPhoto', carPhoto);
-      const { data: order } = await apiClient.post('/orders', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const { data: order } = await apiClient.post<Order>('/orders', formData);
 
       playSound('order_placed');
       // Clear cart after successful order

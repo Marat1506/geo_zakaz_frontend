@@ -23,7 +23,7 @@ export function useOrders() {
     queryKey: ['orders'],
     queryFn: () => ordersApi.getMyOrders(),
     staleTime: 30 * 1000,
-    refetchInterval: 30 * 1000, // Автообновление каждые 30 сек
+    refetchInterval: 30 * 1000, // Auto-refresh every 30s
   });
 }
 

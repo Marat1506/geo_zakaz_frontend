@@ -15,6 +15,7 @@ import { X, Clock, Plus, Lock, Utensils, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { getImageUrl } from '@/lib/utils/image';
 import { apiClient } from '@/lib/api/client';
+import { getApiErrorMessage } from '@/lib/api/get-api-error-message';
 import { cn } from '@/lib/utils/cn';
 import { playSound } from '@/lib/utils/sounds';
 import { Footer } from '@/components/layout/footer';
@@ -142,8 +143,8 @@ export default function ReferralPage() {
     try {
       const response = await apiClient.get<SellerInfo>(`/auth/seller/slug/${slug}`);
       setSeller(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Seller not found');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Seller not found'));
     } finally {
       setLoading(false);
     }

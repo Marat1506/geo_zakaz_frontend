@@ -7,6 +7,7 @@ import { Star } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { apiClient } from '@/lib/api/client';
 import { toast } from '@/components/ui/toast';
+import { getApiErrorMessage } from '@/lib/api/get-api-error-message';
 
 interface Review {
   id: string;
@@ -63,8 +64,12 @@ export function Reviews({ menuItemId }: ReviewsProps) {
       setComment('');
       setRating(5);
       loadReviews();
-    } catch (error: any) {
-      toast({ title: 'Error', description: error.response?.data?.message || 'Failed to submit review', variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({
+        title: 'Error',
+        description: getApiErrorMessage(error, 'Failed to submit review'),
+        variant: 'destructive',
+      });
     } finally {
       setSubmitting(false);
     }

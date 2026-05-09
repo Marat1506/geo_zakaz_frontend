@@ -33,17 +33,17 @@ export const menuApi = {
   },
 
   getMenuItem: async (id: string): Promise<MenuItem> => {
-    const { data } = await apiClient.get(`/menu/admin/${id}`);
+    const { data } = await apiClient.get<MenuItem>(`/menu/admin/${id}`);
     return data;
   },
 
   createMenuItem: async (item: Omit<MenuItem, 'id'>): Promise<MenuItem> => {
-    const { data } = await apiClient.post('/menu/admin', item);
+    const { data } = await apiClient.post<MenuItem>('/menu/admin', item);
     return data;
   },
 
   updateMenuItem: async (id: string, item: Partial<MenuItem>): Promise<MenuItem> => {
-    const { data } = await apiClient.patch(`/menu/admin/${id}`, item);
+    const { data } = await apiClient.patch<MenuItem>(`/menu/admin/${id}`, item);
     return data;
   },
 
@@ -54,25 +54,23 @@ export const menuApi = {
   uploadImage: async (file: File): Promise<{ url: string }> => {
     const formData = new FormData();
     formData.append('file', file);
-    const { data } = await apiClient.post('/menu/admin/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const { data } = await apiClient.post<{ url: string }>('/menu/admin/upload', formData);
     return data;
   },
 
   // Category endpoints
   getCategories: async (): Promise<Array<{ id: string; name: string; order: number }>> => {
-    const { data } = await apiClient.get('/menu/categories');
+    const { data } = await apiClient.get<Array<{ id: string; name: string; order: number }>>('/menu/categories');
     return data;
   },
 
   createCategory: async (category: { name: string; order?: number }): Promise<{ id: string; name: string; order: number }> => {
-    const { data } = await apiClient.post('/menu/admin/categories', category);
+    const { data } = await apiClient.post<{ id: string; name: string; order: number }>('/menu/admin/categories', category);
     return data;
   },
 
   updateCategory: async (id: string, category: { name?: string; order?: number }): Promise<{ id: string; name: string; order: number }> => {
-    const { data } = await apiClient.patch(`/menu/admin/categories/${id}`, category);
+    const { data } = await apiClient.patch<{ id: string; name: string; order: number }>(`/menu/admin/categories/${id}`, category);
     return data;
   },
 

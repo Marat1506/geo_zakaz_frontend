@@ -2,7 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
-import { OrderStatus } from '@/types/order';
+import { OrderStatus, Order } from '@/types/order';
+import { ServiceZone } from '@/types/geo';
+import { MenuItem } from '@/types/menu';
 
 // ── Seller zones ─────────────────────────────────────────────────────────────
 
@@ -10,7 +12,7 @@ export function useSellerZones() {
   return useQuery({
     queryKey: ['sellerZones'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/geo/zones');
+      const { data } = await apiClient.get<ServiceZone[]>('/geo/zones');
       return data as any[];
     },
     staleTime: 5 * 60 * 1000,
@@ -21,7 +23,7 @@ export function usePublicZones() {
   return useQuery({
     queryKey: ['publicZones'],
     queryFn: async () => {
-      const { data } = await apiClient.get('/geo/zones/public');
+      const { data } = await apiClient.get<ServiceZone[]>('/geo/zones/public');
       return data as any[];
     },
     staleTime: 5 * 60 * 1000,
@@ -46,7 +48,7 @@ export function useCreateSellerZone() {
       } else {
         payload = { name: zone.name, type: 'polygon', polygonCoordinates: zone.coordinates, active: zone.active ?? true };
       }
-      const { data } = await apiClient.post('/geo/zones', payload);
+      const { data } = await apiClient.post<ServiceZone>('/geo/zones', payload);
       return data;
     },
     onSuccess: () => {
@@ -74,7 +76,7 @@ export function useUpdateSellerZone() {
       } else {
         payload = { name: zone.name, type: 'polygon', polygonCoordinates: zone.coordinates, active: zone.active ?? true };
       }
-      const { data } = await apiClient.patch(`/geo/zones/${id}`, payload);
+      const { data } = await apiClient.patch<ServiceZone>(`/geo/zones/${id}`, payload);
       return data;
     },
     onSuccess: () => {
@@ -104,7 +106,7 @@ export function useSellerMenu(zoneId?: string) {
     queryKey: ['sellerMenu', zoneId],
     queryFn: async () => {
       const url = zoneId ? `/menu/admin?zoneId=${zoneId}` : '/menu/admin';
-      const { data } = await apiClient.get(url);
+      const { data } = await apiClient.get<MenuItem[]>(url);
       return data as any[];
     },
     staleTime: 2 * 60 * 1000,
@@ -115,7 +117,7 @@ export function useZonePublicMenu(zoneId: string | null) {
   return useQuery({
     queryKey: ['zonePublicMenu', zoneId],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/menu/items/zone/${zoneId}`);
+      const { data } = await apiClient.get<MenuItem[]>(`/menu/items/zone/${zoneId}`);
       return data as any[];
     },
     enabled: !!zoneId,
@@ -134,7 +136,7 @@ export function useSellerOrders(filters?: { status?: string; zoneId?: string }) 
   return useQuery({
     queryKey: ['sellerOrders', filters],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/orders/admin/list${query ? `?${query}` : ''}`);
+      const { data } = await apiClient.get<Order[]>(`/orders/admin/list${query ? `?${query}` : ''}`);
       return data as any[];
     },
     staleTime: 15 * 1000,
@@ -146,7 +148,7 @@ export function useSellerUpdateOrderStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: OrderStatus }) => {
-      const { data } = await apiClient.patch(`/orders/admin/${id}/status`, { status });
+      const { data } = await apiClient.patch<Order>(`/orders/admin/${id}/status`, { status });
       return data;
     },
     onSuccess: () => {

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, MapPin } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
+import { Order } from '@/types/order';
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
@@ -21,7 +22,7 @@ function OrderSuccessContent() {
       return;
     }
 
-    apiClient.get(`/orders/${orderId}`)
+    apiClient.get<Order>(`/orders/${orderId}`)
       .then(res => res.data)
       .then(data => {
         setOrder(data);

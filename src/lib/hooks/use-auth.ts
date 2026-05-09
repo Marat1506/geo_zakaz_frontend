@@ -6,6 +6,35 @@ import { authApi } from '@/lib/api/endpoints/auth';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { LoginCredentials, RegisterData } from '@/types/auth';
 
+export function useFaceLogin(redirectPath?: string) {
+  const { setAuth } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (payload: { descriptor: number[]; email?: string }) =>
+      authApi.faceLogin(payload),
+    onSuccess: (data) => {
+      setAuth(data.user, data.tokens);
+
+      const safeRedirect =
+        redirectPath && redirectPath.startsWith('/') ? redirectPath : undefined;
+
+      let targetPath = '/menu';
+      if (safeRedirect) {
+        targetPath = safeRedirect;
+      } else if (data.user.role === 'admin' || data.user.role === 'superadmin') {
+        targetPath = '/admin/dashboard';
+      } else if (data.user.role === 'seller') {
+        targetPath = '/seller/dashboard';
+      }
+
+      window.location.href = targetPath;
+    },
+    onError: (error) => {
+      console.error('Face login error:', error);
+    },
+  });
+}
+
 export function useLogin(redirectPath?: string) {
   const { setAuth } = useAuthStore();
 
@@ -30,7 +59,7 @@ export function useLogin(redirectPath?: string) {
       }
 
       console.log('Redirecting to:', targetPath);
-      // Используем window.location чтобы браузер отправил куки в middleware
+      // Use window.location so the browser sends cookies to middleware
       window.location.href = targetPath;
     },
     onError: (error) => {
@@ -45,17 +74,38 @@ export function useRegister() {
   return useMutation({
     mutationFn: (userData: RegisterData) => authApi.register(userData),
     onSuccess: (data) => {
-      // If tokens are empty, it means account is pending approval (Seller)
+      if (data.requiresEmailVerification) return;
+      if (!data.tokens.accessToken || !data.tokens.refreshToken) return;
+      setAuth(data.user, {
+        accessToken: data.tokens.accessToken,
+        refreshToken: data.tokens.refreshToken,
+      });
+      window.location.href = '/menu';
+    },
+  });
+}
+
+export function useVerifyRegistrationEmail() {
+  const { setAuth } = useAuthStore();
+
+  return useMutation({
+    mutationFn: ({ email, code }: { email: string; code: string }) =>
+      authApi.verifyRegistrationEmail(email, code),
+    onSuccess: (data) => {
       if (!data.tokens.accessToken || !data.tokens.refreshToken) {
-        // Just stay on the page or redirect to a "waiting" page
-        // The component will handle showing the success message
         return;
       }
       setAuth(data.user, {
         accessToken: data.tokens.accessToken,
         refreshToken: data.tokens.refreshToken,
       });
-      window.location.href = '/menu';
+      let targetPath = '/menu';
+      if (data.user.role === 'admin' || data.user.role === 'superadmin') {
+        targetPath = '/admin/dashboard';
+      } else if (data.user.role === 'seller') {
+        targetPath = '/seller/dashboard';
+      }
+      window.location.href = targetPath;
     },
   });
 }

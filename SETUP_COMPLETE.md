@@ -14,7 +14,8 @@ Task 1 of the frontend-food-ordering-app spec has been successfully completed.
 
 - ✓ @tanstack/react-query (v5.90.21) - Server state management
 - ✓ zustand (v5.0.11) - Client state management
-- ✓ axios (v1.13.6) - HTTP client
+- ✓ Native `fetch` via `src/lib/api/client.ts` (cookies, Bearer token, refresh on 401)
+- ✓ @tanstack/react-query — server/async state (see `app/providers.tsx`, hooks in `lib/hooks/`)
 - ✓ react-hook-form (v7.71.2) - Form handling
 - ✓ zod (v4.3.6) - Schema validation
 - ✓ clsx & tailwind-merge - Utility for className merging

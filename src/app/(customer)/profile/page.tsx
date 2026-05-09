@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import type { User as AuthUser } from '@/types/auth';
 import {
-  User, Package, Clock, CheckCircle, Truck, Mail, Phone,
+  User as UserIcon, Package, Clock, CheckCircle, Truck, Mail, Phone,
   LogOut, ChevronRight, RefreshCw, XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -42,6 +43,24 @@ export default function ProfilePage() {
     if (!user) router.push('/login');
   }, [user, router]);
 
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await apiClient.get<AuthUser>('/auth/me');
+        if (!cancelled && data) {
+          updateUser(data);
+        }
+      } catch {
+        //
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, updateUser]);
+
   if (!user) return null;
 
   const activeOrders = orders?.filter(
@@ -56,7 +75,7 @@ export default function ProfilePage() {
     setSaving(true);
     setSaveError('');
     try {
-      const { data } = await apiClient.patch('/auth/profile', form);
+      const { data } = await apiClient.patch<AuthUser>('/auth/profile', form);
       updateUser(data);
       setEditMode(false);
     } catch {
@@ -92,7 +111,7 @@ export default function ProfilePage() {
               <CardHeader className="bg-gradient-to-r from-orange-400 to-yellow-400 rounded-t-lg pb-4">
                 <div className="flex items-center gap-3">
                   <div className="h-14 w-14 rounded-full bg-white/30 flex items-center justify-center">
-                    <User className="h-8 w-8 text-white" />
+                    <UserIcon className="h-8 w-8 text-white" />
                   </div>
                   <div>
                     <p className="text-white font-bold text-lg">{user.name || 'Customer'}</p>
@@ -168,6 +187,19 @@ export default function ProfilePage() {
             </Card>
 
           {/* Quick links */}
+            <Card className="shadow-lg border-2 border-orange-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg text-gray-800">Face login</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
+                <p className="text-sm text-gray-600">
+                  {user.hasFaceLogin
+                    ? 'You can sign in with your face on the login page (email + one capture) — your face template was saved at registration.'
+                    : 'If you do not see face login on the sign-in page, this account was created before face registration was required — use email and password, or contact support to reset your profile.'}
+                </p>
+              </CardContent>
+            </Card>
+
             <Card className="shadow-lg border-2 border-orange-200">
               <CardContent className="pt-4 space-y-2">
                 <Link href="/menu">

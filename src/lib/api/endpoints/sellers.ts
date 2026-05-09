@@ -17,32 +17,32 @@ export interface CreateSellerDto {
 
 export const sellersApi = {
   getSellers: async (): Promise<Seller[]> => {
-    const { data } = await apiClient.get('/auth/sellers');
+    const { data } = await apiClient.get<Seller[]>('/auth/sellers');
     return data;
   },
 
   createSeller: async (dto: CreateSellerDto): Promise<Seller> => {
-    const { data } = await apiClient.post('/auth/sellers', dto);
+    const { data } = await apiClient.post<Seller>('/auth/sellers', dto);
     return data;
   },
 
   blockSeller: async (id: string): Promise<Seller> => {
-    const { data } = await apiClient.patch(`/auth/sellers/${id}/block`);
+    const { data } = await apiClient.patch<Seller>(`/auth/sellers/${id}/block`);
     return data;
   },
 
   unblockSeller: async (id: string): Promise<Seller> => {
-    const { data } = await apiClient.patch(`/auth/sellers/${id}/unblock`);
+    const { data } = await apiClient.patch<Seller>(`/auth/sellers/${id}/unblock`);
     return data;
   },
 
   approveSeller: async (id: string): Promise<Seller> => {
-    const { data } = await apiClient.patch(`/auth/sellers/${id}/approve`);
+    const { data } = await apiClient.patch<Seller>(`/auth/sellers/${id}/approve`);
     return data;
   },
 
   rejectSeller: async (id: string): Promise<Seller> => {
-    const { data } = await apiClient.patch(`/auth/sellers/${id}/reject`);
+    const { data } = await apiClient.patch<Seller>(`/auth/sellers/${id}/reject`);
     return data;
   },
 };

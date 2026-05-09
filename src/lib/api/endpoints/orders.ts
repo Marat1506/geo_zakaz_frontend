@@ -24,29 +24,27 @@ export const ordersApi = {
     formData.append('paymentMethod', orderData.paymentMethod);
     formData.append('carPhoto', orderData.carPhoto);
 
-    const { data } = await apiClient.post('/orders', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    const { data } = await apiClient.post<Order>('/orders', formData);
     return data;
   },
 
   getMyOrders: async (): Promise<Order[]> => {
-    const { data } = await apiClient.get('/orders/customer/my-orders');
+    const { data } = await apiClient.get<Order[]>('/orders/customer/my-orders');
     return data;
   },
 
   getOrder: async (id: string): Promise<Order> => {
-    const { data } = await apiClient.get(`/orders/${id}`);
+    const { data } = await apiClient.get<Order>(`/orders/${id}`);
     return data;
   },
 
   updateOrderStatus: async (id: string, status: OrderStatus): Promise<Order> => {
-    const { data } = await apiClient.patch(`/orders/admin/${id}/status`, { status });
+    const { data } = await apiClient.patch<Order>(`/orders/admin/${id}/status`, { status });
     return data;
   },
 
   getAllOrders: async (): Promise<Order[]> => {
-    const { data } = await apiClient.get('/orders/admin/list');
+    const { data } = await apiClient.get<Order[]>('/orders/admin/list');
     return data;
   },
 };

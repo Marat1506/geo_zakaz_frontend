@@ -22,12 +22,12 @@ export const geoApi = {
   },
 
   getPublicServiceZones: async (): Promise<ServiceZone[]> => {
-    const { data } = await apiClient.get('/geo/zones/public');
+    const { data } = await apiClient.get<ServiceZone[]>('/geo/zones/public');
     return data;
   },
 
   getServiceZones: async (): Promise<ServiceZone[]> => {
-    const { data } = await apiClient.get('/geo/zones');
+    const { data } = await apiClient.get<ServiceZone[]>('/geo/zones');
     return data;
   },
 
@@ -58,7 +58,7 @@ export const geoApi = {
       payload = zone;
     }
     
-    const { data } = await apiClient.post('/geo/zones', payload);
+    const { data } = await apiClient.post<ServiceZone>('/geo/zones', payload);
     return data;
   },
 
@@ -89,7 +89,7 @@ export const geoApi = {
       payload = zone;
     }
     
-    const { data } = await apiClient.patch(`/geo/zones/${id}`, payload);
+    const { data } = await apiClient.patch<ServiceZone>(`/geo/zones/${id}`, payload);
     return data;
   },
 

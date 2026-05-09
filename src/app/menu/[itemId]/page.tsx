@@ -13,7 +13,7 @@ import { getImageUrl } from '@/lib/utils/image';
 import { MenuItem } from '@/types/menu';
 import { apiClient } from '@/lib/api/client';
 import { toast } from '@/components/ui/toast';
-import { AxiosError } from 'axios';
+import { HttpError } from '@/lib/api/http-error';
 import { Header } from '@/components/layout/header';
 
 export default function MenuItemPage() {
@@ -50,7 +50,7 @@ export default function MenuItemPage() {
       const response = await apiClient.get<MenuItem>(`/menu/items/${itemId}`);
       setItem(normalizeItem(response.data));
     } catch (error) {
-      const err = error as AxiosError;
+      const err = error as HttpError;
 
       // Fallback for environments where single-item public endpoint is unavailable.
       if (err.response?.status === 404) {

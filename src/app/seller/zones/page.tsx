@@ -10,6 +10,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Plus, Edit, Trash2, MapPin, Layers } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { getApiErrorMessage } from '@/lib/api/get-api-error-message';
 
 const ServiceZoneForm = dynamic(
   () => import('@/components/features/service-zone-form').then((m) => m.ServiceZoneForm),
@@ -46,8 +47,8 @@ export default function SellerZonesPage() {
       await deleteZone.mutateAsync(confirmDeleteId);
       toast({ title: 'Deleted', description: 'Zone and all its products have been deleted successfully.' });
       setConfirmDeleteId(null);
-    } catch (err: any) {
-      const message = err.response?.data?.message || 'Failed to delete zone.';
+    } catch (err: unknown) {
+      const message = getApiErrorMessage(err, 'Failed to delete zone.');
       toast({ title: 'Error', description: message, variant: 'destructive' });
       setConfirmDeleteId(null);
     }
