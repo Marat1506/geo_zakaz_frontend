@@ -16,8 +16,23 @@ interface CreateSellerFormData {
   password: string;
 }
 
+/** Seller docs in DB are often full http://localhost:3000/uploads/... from dev registration. */
+function resolveSellerDocUrl(url: string): string {
+  const uploadsIdx = url.indexOf('/uploads/');
+  if (uploadsIdx === -1) {
+    return getImageUrl(url) || url;
+  }
+  const path = url.slice(uploadsIdx);
+  const base =
+    (typeof window !== 'undefined' ? window.location.origin : null) ||
+    process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ||
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
+    'https://lotfood.ru';
+  return `${base}${path}`;
+}
+
 function DocImage({ url, label }: { url: string; label: string }) {
-  const src = getImageUrl(url) || url;
+  const src = resolveSellerDocUrl(url);
   return (
     <div className="space-y-1">
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>

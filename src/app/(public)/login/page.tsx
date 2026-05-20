@@ -31,7 +31,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const redirectParam = searchParams.get('redirect');
-  const redirect = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/profile';
+  const redirect = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/menu';
   const login = useLogin(redirect);
   const faceLogin = useFaceLogin(redirect);
   const [mode, setMode] = useState<'face' | 'email'>('face');
