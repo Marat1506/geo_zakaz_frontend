@@ -10,12 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { LogIn } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, Suspense, useState } from 'react';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { FaceScanner } from '@/components/face/FaceScanner';
 import { cn } from '@/lib/utils/cn';
 import { preloadFaceModels } from '@/lib/face/preload';
+import { resolvePostLoginRedirect } from '@/lib/auth/post-login-redirect';
 
 function apiErrorMessage(error: unknown): string {
   if (typeof error !== 'object' || error === null) return '';
@@ -27,13 +28,11 @@ function apiErrorMessage(error: unknown): string {
 }
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuthStore();
   const redirectParam = searchParams.get('redirect');
-  const redirect = redirectParam && redirectParam.startsWith('/') ? redirectParam : '/menu';
-  const login = useLogin(redirect);
-  const faceLogin = useFaceLogin(redirect);
+  const login = useLogin(redirectParam ?? undefined);
+  const faceLogin = useFaceLogin(redirectParam ?? undefined);
   const [mode, setMode] = useState<'face' | 'email'>('face');
 
   useEffect(() => {
@@ -41,10 +40,10 @@ function LoginForm() {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      router.push(redirect);
-    }
-  }, [user, router, redirect]);
+    if (!user) return;
+    const target = resolvePostLoginRedirect(redirectParam, user.role);
+    window.location.replace(target);
+  }, [user, redirectParam]);
 
   const {
     register,

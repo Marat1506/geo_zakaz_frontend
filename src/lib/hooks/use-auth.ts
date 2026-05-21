@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/endpoints/auth';
 import { useAuthStore } from '@/lib/store/auth-store';
 import { LoginCredentials, RegisterData } from '@/types/auth';
+import { resolvePostLoginRedirect } from '@/lib/auth/post-login-redirect';
 
 export function useFaceLogin(redirectPath?: string) {
   const { setAuth } = useAuthStore();
@@ -14,19 +15,7 @@ export function useFaceLogin(redirectPath?: string) {
       authApi.faceLogin(payload),
     onSuccess: (data) => {
       setAuth(data.user, data.tokens);
-
-      const safeRedirect =
-        redirectPath && redirectPath.startsWith('/') ? redirectPath : undefined;
-
-      let targetPath = '/menu';
-      if (safeRedirect) {
-        targetPath = safeRedirect;
-      } else if (data.user.role === 'admin' || data.user.role === 'superadmin') {
-        targetPath = '/admin/dashboard';
-      } else if (data.user.role === 'seller') {
-        targetPath = '/seller/dashboard';
-      }
-
+      const targetPath = resolvePostLoginRedirect(redirectPath, data.user.role);
       window.location.href = targetPath;
     },
     onError: (error) => {
@@ -41,25 +30,8 @@ export function useLogin(redirectPath?: string) {
   return useMutation({
     mutationFn: (credentials: LoginCredentials) => authApi.login(credentials),
     onSuccess: (data) => {
-      console.log('Login success, user data:', data.user);
-      console.log('User role:', data.user.role);
       setAuth(data.user, data.tokens);
-
-      const safeRedirect =
-        redirectPath && redirectPath.startsWith('/') ? redirectPath : undefined;
-
-      let targetPath = '/menu';
-      if (safeRedirect) {
-        // If user came from a deep link (e.g. /ref/:slug), return there for any role.
-        targetPath = safeRedirect;
-      } else if (data.user.role === 'admin' || data.user.role === 'superadmin') {
-        targetPath = '/admin/dashboard';
-      } else if (data.user.role === 'seller') {
-        targetPath = '/seller/dashboard';
-      }
-
-      console.log('Redirecting to:', targetPath);
-      // Use window.location so the browser sends cookies to middleware
+      const targetPath = resolvePostLoginRedirect(redirectPath, data.user.role);
       window.location.href = targetPath;
     },
     onError: (error) => {
@@ -80,7 +52,7 @@ export function useRegister() {
         accessToken: data.tokens.accessToken,
         refreshToken: data.tokens.refreshToken,
       });
-      window.location.href = '/menu';
+      window.location.href = resolvePostLoginRedirect(undefined, data.user.role);
     },
   });
 }
@@ -99,13 +71,7 @@ export function useVerifyRegistrationEmail() {
         accessToken: data.tokens.accessToken,
         refreshToken: data.tokens.refreshToken,
       });
-      let targetPath = '/menu';
-      if (data.user.role === 'admin' || data.user.role === 'superadmin') {
-        targetPath = '/admin/dashboard';
-      } else if (data.user.role === 'seller') {
-        targetPath = '/seller/dashboard';
-      }
-      window.location.href = targetPath;
+      window.location.href = resolvePostLoginRedirect(undefined, data.user.role);
     },
   });
 }

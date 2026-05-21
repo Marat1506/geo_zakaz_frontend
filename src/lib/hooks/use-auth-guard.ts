@@ -14,7 +14,7 @@ function hasAccess(userRole: string, requiredRole: UserRole): boolean {
 function getDefaultRoute(role: string): string {
   if (role === 'admin' || role === 'superadmin') return '/admin/dashboard';
   if (role === 'seller') return '/seller/dashboard';
-  return '/menu';
+  return '/';
 }
 
 export function useAuthGuard(requiredRole?: UserRole) {

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { User, ShoppingCart, LogIn, UserPlus, Package, LayoutDashboard, Store } from "lucide-react"
 import { getImageUrl } from "@/lib/utils/image"
+import { loginRedirectParam } from "@/lib/auth/post-login-redirect"
 
 interface HeaderSellerInfo {
   shopName?: string
@@ -33,10 +34,9 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
   const brandDescription = sellerInfo?.shopDescription || ""
   const isSellerBranded = Boolean(sellerInfo)
 
-  const authRedirect =
-    pathname && pathname.startsWith("/") ? encodeURIComponent(pathname) : encodeURIComponent("/")
-  const loginHref = `/login?redirect=${authRedirect}`
-  const registerHref = `/register?redirect=${authRedirect}`
+  const redirectTarget = pathname ? loginRedirectParam(pathname) : "/"
+  const loginHref = `/login?redirect=${encodeURIComponent(redirectTarget)}`
+  const registerHref = `/register?redirect=${encodeURIComponent(redirectTarget)}`
 
   const accountHref = isAdmin
     ? "/admin/dashboard"

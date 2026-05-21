@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { loginRedirectParam } from './src/lib/auth/post-login-redirect';
 
 export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get('accessToken')?.value;
@@ -19,7 +20,7 @@ export function middleware(request: NextRequest) {
 
   const loginWithRedirect = (targetPath: string) => {
     const url = new URL('/login', request.url);
-    url.searchParams.set('redirect', targetPath);
+    url.searchParams.set('redirect', loginRedirectParam(targetPath));
     return NextResponse.redirect(url);
   };
 

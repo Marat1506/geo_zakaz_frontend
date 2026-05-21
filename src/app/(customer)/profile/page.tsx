@@ -40,7 +40,7 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    if (!user) router.push('/login');
+    if (!user) router.push('/login?redirect=/');
   }, [user, router]);
 
   useEffect(() => {

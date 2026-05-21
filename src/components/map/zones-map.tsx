@@ -15,7 +15,40 @@ interface Zone {
   active?: boolean;
 }
 
-const ZOOM_NEAR_USER = 14;
+const ZOOM_CITY = 13;
+const ZOOM_ZONE = 14;
+/** Minimum zoom — never leave the map at continent/world scale */
+const ZOOM_MIN = 11;
+const ZOOM_FALLBACK = 10;
+const DEFAULT_CENTER: [number, number] = [47.2357, 39.7015];
+
+function mergeBounds(boundsList: L.LatLngBounds[]): L.LatLngBounds | null {
+  if (boundsList.length === 0) return null;
+  let south = Infinity;
+  let west = Infinity;
+  let north = -Infinity;
+  let east = -Infinity;
+  for (const b of boundsList) {
+    const sw = b.getSouthWest();
+    const ne = b.getNorthEast();
+    south = Math.min(south, sw.lat);
+    west = Math.min(west, sw.lng);
+    north = Math.max(north, ne.lat);
+    east = Math.max(east, ne.lng);
+  }
+  return L.latLngBounds([south, west], [north, east]);
+}
+
+function fitMapToBounds(map: L.Map, bounds: L.LatLngBounds, maxZoom = ZOOM_ZONE) {
+  try {
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom });
+    if (map.getZoom() < ZOOM_MIN) {
+      map.setZoom(ZOOM_MIN);
+    }
+  } catch {
+    /* ignore invalid bounds */
+  }
+}
 
 interface ZonesMapProps {
   zones: Zone[];
@@ -40,7 +73,7 @@ export function ZonesMap({
   const mapRef = useRef<L.Map | null>(null);
   const layersRef = useRef<Map<string, L.Layer>>(new Map());
   const userMarkerRef = useRef<L.Marker | null>(null);
-  const didCenterOnUserRef = useRef(false);
+  const didApplyViewRef = useRef(false);
   const prevSelectedZoneIdRef = useRef<string | null | undefined>(undefined);
   const [isClient, setIsClient] = useState(false);
 
@@ -58,11 +91,10 @@ export function ZonesMap({
     if (!isClient) return;
 
     if (!mapRef.current) {
-      // Initialize map with user location if available, otherwise default view
       const initialCenter: [number, number] = userLocation
         ? [userLocation.lat, userLocation.lng]
-        : [20, 0];
-      const initialZoom = userLocation ? 12 : 2; // City zoom level if user location available
+        : DEFAULT_CENTER;
+      const initialZoom = userLocation ? ZOOM_CITY : ZOOM_FALLBACK;
 
       const map = L.map('zones-map', {
         zoomControl: true,
@@ -101,7 +133,7 @@ export function ZonesMap({
     layersRef.current.forEach((layer) => map.removeLayer(layer));
     layersRef.current.clear();
 
-    const bounds: L.LatLngBoundsExpression[] = [];
+    const zoneBoundsList: L.LatLngBounds[] = [];
 
     zones.forEach((zone) => {
       if (!zone.active) return;
@@ -132,7 +164,7 @@ export function ZonesMap({
         circle.on('click', () => onZoneClick?.(zone.id));
 
         layersRef.current.set(zone.id, circle);
-        bounds.push(circle.getBounds() as any);
+        zoneBoundsList.push(circle.getBounds());
       } else if (zone.type === 'polygon' && zone.polygonCoordinates) {
         const polygon = L.polygon(zone.polygonCoordinates, {
           color,
@@ -149,28 +181,55 @@ export function ZonesMap({
         polygon.on('click', () => onZoneClick?.(zone.id));
 
         layersRef.current.set(zone.id, polygon);
-        bounds.push(polygon.getBounds() as any);
+        zoneBoundsList.push(polygon.getBounds());
       }
     });
 
-    const skipGlobalFitForDistantUser = Boolean(focusUserNearMe && userLocation);
+    const applyMapView = () => {
+      if (selectedZoneId) {
+        const layer = layersRef.current.get(selectedZoneId);
+        if (layer && (layer as L.Circle | L.Polygon).getBounds) {
+          const b = (layer as L.Circle | L.Polygon).getBounds();
+          if (userLocation) {
+            b.extend([userLocation.lat, userLocation.lng]);
+          }
+          fitMapToBounds(map, b);
+          didApplyViewRef.current = true;
+          return;
+        }
+      }
 
-    if (bounds.length > 0 && !selectedZoneId && !skipGlobalFitForDistantUser) {
-      try {
-        const allBounds = L.latLngBounds(bounds.flat() as any);
-        map.fitBounds(allBounds, { padding: [40, 40] });
-      } catch { }
-    }
-  }, [isClient, zones, selectedZoneId, onZoneClick, focusUserNearMe, userLocation]);
+      if (userLocation) {
+        map.flyTo([userLocation.lat, userLocation.lng], ZOOM_CITY, {
+          animate: !didApplyViewRef.current,
+          duration: 0.75,
+        });
+        didApplyViewRef.current = true;
+        return;
+      }
 
-  // Pan to selected zone
-  useEffect(() => {
-    if (!isClient || !mapRef.current || !selectedZoneId) return;
-    const layer = layersRef.current.get(selectedZoneId);
-    if (layer && (layer as any).getBounds) {
-      mapRef.current.fitBounds((layer as any).getBounds(), { padding: [40, 40] });
-    }
-  }, [isClient, selectedZoneId]);
+      const skipGlobalFit = focusUserNearMe || userLocation;
+      if (zoneBoundsList.length > 0 && !selectedZoneId && !skipGlobalFit) {
+        const merged = mergeBounds(zoneBoundsList);
+        if (merged) {
+          fitMapToBounds(map, merged);
+          didApplyViewRef.current = true;
+        }
+      }
+    };
+
+    applyMapView();
+
+    const resizeTimer = setTimeout(() => {
+      if (!mapRef.current) return;
+      mapRef.current.invalidateSize();
+      if (userLocation || selectedZoneId) {
+        applyMapView();
+      }
+    }, 200);
+
+    return () => clearTimeout(resizeTimer);
+  }, [isClient, zones, selectedZoneId, onZoneClick, focusUserNearMe, userLocation, currentZoneId]);
 
   // User location marker
   useEffect(() => {
@@ -178,7 +237,7 @@ export function ZonesMap({
     const map = mapRef.current;
 
     if (prevSelectedZoneIdRef.current && !selectedZoneId) {
-      didCenterOnUserRef.current = false;
+      didApplyViewRef.current = false;
     }
     prevSelectedZoneIdRef.current = selectedZoneId ?? null;
 
@@ -189,9 +248,6 @@ export function ZonesMap({
       iconAnchor: [7, 7],
     });
 
-    const shouldPrioritizeUser =
-      !selectedZoneId && (focusUserNearMe || zones.length === 0);
-
     if (userMarkerRef.current) {
       userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
     } else {
@@ -200,11 +256,29 @@ export function ZonesMap({
         .bindTooltip('You are here', { direction: 'top' });
     }
 
-    if (shouldPrioritizeUser && !didCenterOnUserRef.current) {
-      map.flyTo([userLocation.lat, userLocation.lng], ZOOM_NEAR_USER, { animate: true, duration: 0.75 });
-      didCenterOnUserRef.current = true;
+    const zoomTooWide = map.getZoom() < ZOOM_MIN;
+
+    if (selectedZoneId) {
+      const layer = layersRef.current.get(selectedZoneId);
+      if (layer && (layer as L.Circle | L.Polygon).getBounds) {
+        const b = (layer as L.Circle | L.Polygon).getBounds();
+        b.extend([userLocation.lat, userLocation.lng]);
+        if (zoomTooWide || !didApplyViewRef.current) {
+          fitMapToBounds(map, b);
+          didApplyViewRef.current = true;
+        }
+        return;
+      }
     }
-  }, [isClient, userLocation, selectedZoneId, zones.length, focusUserNearMe]);
+
+    if (zoomTooWide || !didApplyViewRef.current) {
+      map.flyTo([userLocation.lat, userLocation.lng], ZOOM_CITY, {
+        animate: didApplyViewRef.current,
+        duration: 0.75,
+      });
+      didApplyViewRef.current = true;
+    }
+  }, [isClient, userLocation, selectedZoneId, zones.length]);
 
   if (!isClient) return <div style={{ height }} className="bg-gray-100 flex items-center justify-center"><span className="text-gray-500">Loading map...</span></div>;
 

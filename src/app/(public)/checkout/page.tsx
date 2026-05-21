@@ -15,7 +15,9 @@ import { useGeoStore } from '@/lib/store/geo-store';
 import { toast } from '@/components/ui/toast';
 import { playSound } from '@/lib/utils/sounds';
 import { apiClient } from '@/lib/api/client';
+import { getApiErrorMessage } from '@/lib/api/get-api-error-message';
 import { Order } from '@/types/order';
+import { normalizeCarPhotoForUpload } from '@/lib/utils/order-photo';
 
 const DeliveryZoneMap = dynamic(
   () => import('@/components/map/delivery-zone-map').then((mod) => mod.DeliveryZoneMap),
@@ -131,28 +133,20 @@ export default function CheckoutPage() {
     try {
       const formData = new FormData();
 
-      // Add order items as JSON string
-      const orderItems = items.map(item => ({
+      const orderItems = items.map((item) => ({
         menuItemId: item.menuItem.id,
         quantity: item.quantity,
       }));
       formData.append('items', JSON.stringify(orderItems));
-
-      // Add car information
       formData.append('carPlateNumber', data.carPlateNumber);
       if (data.parkingSpot) {
         formData.append('parkingSpot', data.parkingSpot);
       }
-
-      // Delivery is allowed only for users inside active service zones.
       formData.append('customerLat', String(userLocation.latitude));
       formData.append('customerLng', String(userLocation.longitude));
-
-      // Add payment method
       formData.append('paymentMethod', 'cash');
+      formData.append('carPhoto', normalizeCarPhotoForUpload(carPhoto));
 
-      // Add car photo
-      formData.append('carPhoto', carPhoto);
       const { data: order } = await apiClient.post<Order>('/orders', formData);
 
       playSound('order_placed');
@@ -164,10 +158,12 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error('Order error:', error);
       playSound('error');
-      const message = error instanceof Error ? error.message : 'Something went wrong.';
       toast({
         title: 'Order failed',
-        description: message || 'Failed to place order. Please try again.',
+        description: getApiErrorMessage(
+          error,
+          'Failed to place order. Please try again.',
+        ),
         variant: 'destructive',
       });
     } finally {
