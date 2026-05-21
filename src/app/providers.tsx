@@ -3,9 +3,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, useState, useEffect } from 'react';
 import { ToastProvider } from '@/components/ui/toast';
-import { useAuthStore } from '@/lib/store/auth-store';
 import { useCartStore } from '@/lib/store/cart-store';
 import { useGeoStore } from '@/lib/store/geo-store';
+import { bootstrapAuthFromCookies } from '@/lib/auth/bootstrap-auth';
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -30,6 +30,7 @@ export function Providers({ children }: { children: ReactNode }) {
   );
 
   useEffect(() => {
+    void bootstrapAuthFromCookies();
     useCartStore.persist.rehydrate();
     useGeoStore.persist.rehydrate();
   }, []);

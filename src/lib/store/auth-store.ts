@@ -1,56 +1,47 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { User, AuthTokens } from '@/types/auth';
 import { setTokens, clearTokens } from '@/lib/api/client';
 
 interface AuthState {
   user: User | null;
-  tokens: AuthTokens | null;
   isAuthenticated: boolean;
+  /** True after we tried to restore session from HTTP-only cookies via /auth/me */
+  authReady: boolean;
   setAuth: (user: User, tokens: AuthTokens) => void;
+  setSession: (user: User) => void;
   clearAuth: () => void;
+  setAuthReady: (ready: boolean) => void;
   updateUser: (user: Partial<User>) => void;
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      tokens: null,
-      isAuthenticated: false,
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  isAuthenticated: false,
+  authReady: false,
 
-      setAuth: (user, tokens) => {
-        setTokens(tokens.accessToken, tokens.refreshToken);
+  setAuth: (user, tokens) => {
+    if (tokens.accessToken && tokens.refreshToken) {
+      setTokens(tokens.accessToken, tokens.refreshToken);
+    } else {
+      clearTokens();
+    }
+    set({ user, isAuthenticated: true, authReady: true });
+  },
 
-        if (typeof window !== 'undefined') {
-          // Keep only role cookie client-visible for Next middleware role routing.
-          const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-          document.cookie = `userRole=${user.role}; path=/; max-age=3600; SameSite=Lax${secure}`;
-        }
-        set({ user, tokens, isAuthenticated: true });
-      },
+  setSession: (user) => {
+    clearTokens();
+    set({ user, isAuthenticated: true, authReady: true });
+  },
 
-      clearAuth: () => {
-        clearTokens();
+  clearAuth: () => {
+    clearTokens();
+    set({ user: null, isAuthenticated: false, authReady: true });
+  },
 
-        if (typeof window !== 'undefined') {
-          document.cookie = 'userRole=; path=/; max-age=0; SameSite=Lax';
-        }
-        set({ user: null, tokens: null, isAuthenticated: false });
-      },
+  setAuthReady: (ready) => set({ authReady: ready }),
 
-      updateUser: (userData) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...userData } : null,
-        })),
-    }),
-    {
-      name: 'auth-storage',
-      skipHydration: false,
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    },
-  ),
-);
+  updateUser: (userData) =>
+    set((state) => ({
+      user: state.user ? { ...state.user, ...userData } : null,
+    })),
+}));

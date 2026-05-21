@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store/auth-store';
+import { loginRedirectParam } from '@/lib/auth/post-login-redirect';
 
 type UserRole = 'customer' | 'admin' | 'superadmin' | 'seller';
 
@@ -18,7 +19,7 @@ function getDefaultRoute(role: string): string {
 }
 
 export function useAuthGuard(requiredRole?: UserRole) {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, authReady } = useAuthStore();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
@@ -27,15 +28,21 @@ export function useAuthGuard(requiredRole?: UserRole) {
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !authReady) return;
     if (!isAuthenticated || !user) {
-      router.replace('/login');
+      const redirect = loginRedirectParam(
+        typeof window !== 'undefined' ? window.location.pathname : '/',
+      );
+      router.replace(`/login?redirect=${encodeURIComponent(redirect)}`);
       return;
     }
     if (requiredRole && !hasAccess(user.role, requiredRole)) {
       router.replace(getDefaultRoute(user.role));
     }
-  }, [mounted, isAuthenticated, user, requiredRole, router]);
+  }, [mounted, authReady, isAuthenticated, user, requiredRole, router]);
 
-  return { isAuthenticated: mounted && isAuthenticated, user: mounted ? user : null };
+  return {
+    isAuthenticated: mounted && authReady && isAuthenticated,
+    user: mounted && authReady ? user : null,
+  };
 }

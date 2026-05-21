@@ -1,7 +1,9 @@
 'use client';
 
 import { useForm } from 'react-hook-form';
-import { useRouter } from 'next/navigation'; import { useCartStore } from '@/lib/store/cart-store'; import { useAuthStore } from '@/lib/store/auth-store';
+import { useRouter } from 'next/navigation';
+import { useCartStore } from '@/lib/store/cart-store';
+import { useAuthStore } from '@/lib/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,11 +29,13 @@ const DeliveryZoneMap = dynamic(
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, tax, deliveryFee, total } = useCartStore();
-  const { user } = useAuthStore();
+  const { user, authReady } = useAuthStore();
+  const clearLocation = useGeoStore((s) => s.clearLocation);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [carPhoto, setCarPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const geoRequestedRef = useRef(false);
   const { userLocation, inServiceZone, zoneName } = useGeoStore();
   const checkLocation = useCheckLocation();
   const { data: serviceZones = [], isLoading: zonesLoading, isError: zonesError } = usePublicServiceZones();
@@ -44,10 +48,15 @@ export default function CheckoutPage() {
   } = useForm();
 
   useEffect(() => {
+    clearLocation();
+  }, [clearLocation]);
+
+  useEffect(() => {
+    if (!authReady) return;
     if (items.length === 0) {
       router.push('/cart');
+      return;
     }
-    // Guest -> login, authenticated non-customer -> own dashboard.
     if (!user) {
       router.push('/login?redirect=/checkout');
       return;
@@ -59,10 +68,12 @@ export default function CheckoutPage() {
     if (user.role === 'seller') {
       router.push('/seller/dashboard');
     }
-  }, [items.length, user, router]);
+  }, [authReady, items.length, user, router]);
 
   useEffect(() => {
-    if (userLocation || checkLocation.isPending) return;
+    if (!authReady || !user || user.role !== 'customer') return;
+    if (geoRequestedRef.current) return;
+    geoRequestedRef.current = true;
 
     if (!navigator.geolocation) {
       setGeoError('Geolocation is not supported in this browser.');
@@ -86,7 +97,7 @@ export default function CheckoutPage() {
         timeout: 10000,
       },
     );
-  }, [userLocation, checkLocation]);
+  }, [authReady, user?.id]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -136,6 +147,9 @@ export default function CheckoutPage() {
       const orderItems = items.map((item) => ({
         menuItemId: item.menuItem.id,
         quantity: item.quantity,
+        ...(item.specialInstructions?.trim()
+          ? { specialInstructions: item.specialInstructions.trim() }
+          : {}),
       }));
       formData.append('items', JSON.stringify(orderItems));
       formData.append('carPlateNumber', data.carPlateNumber);
@@ -170,6 +184,14 @@ export default function CheckoutPage() {
       setIsSubmitting(false);
     }
   };
+
+  if (!authReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50">
+        <Loader2 className="h-10 w-10 animate-spin text-orange-500" />
+      </div>
+    );
+  }
 
   if (items.length === 0 || !user || user.role !== 'customer') return null;
 
@@ -284,7 +306,15 @@ export default function CheckoutPage() {
                     </Label>
                     <Input
                       id="carPlateNumber"
-                      {...register('carPlateNumber', { required: true })}
+                      {...register('carPlateNumber', {
+                        required: 'Car plate is required',
+                        minLength: { value: 2, message: 'At least 2 characters' },
+                        maxLength: { value: 20, message: 'Max 20 characters' },
+                        pattern: {
+                          value: /^[A-Za-z0-9-]+$/,
+                          message: 'Letters, numbers and hyphens only',
+                        },
+                      })}
                       placeholder="ABC-1234"
                       className="mt-2 h-12 text-lg border-2 border-orange-300 focus:border-orange-500"
                     />

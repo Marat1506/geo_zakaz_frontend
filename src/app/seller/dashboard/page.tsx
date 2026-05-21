@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { RefreshCw, Bell, BellOff, ChevronDown, ChevronUp, Clock, Car, Package, Filter } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
 import { playSound } from '@/lib/utils/sounds';
+import { getBackendOrigin } from '@/lib/api/get-backend-origin';
 
 type OrderStatus = 'pending_payment' | 'preparing' | 'on_the_way' | 'delivered' | 'cancelled';
 
@@ -43,8 +44,11 @@ export default function SellerDashboardPage() {
     if (!user?.id) return;
     let socket: any;
     import('socket.io-client').then(({ io }) => {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-      socket = io(`${backendUrl}/notifications`, { transports: ['websocket'] });
+      const backendUrl = getBackendOrigin();
+      socket = io(`${backendUrl}/notifications`, {
+        transports: ['websocket'],
+        withCredentials: true,
+      });
       socketRef.current = socket;
       socket.on('connect', () => {
         socket.emit('join_seller_room', { sellerId: user.id });

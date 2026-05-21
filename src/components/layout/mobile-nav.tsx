@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 
 export function MobileNav() {
   const [open, setOpen] = React.useState(false)
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, user, authReady } = useAuthStore()
+  const showAuthed = authReady && isAuthenticated && user
 
   React.useEffect(() => {
     if (open) {
@@ -77,7 +78,7 @@ export function MobileNav() {
               Menu
             </Link>
 
-            {isAuthenticated && user?.role === "customer" && (
+            {showAuthed && user?.role === "customer" && (
               <>
                 <Link
                   href="/orders"
@@ -96,7 +97,7 @@ export function MobileNav() {
               </>
             )}
 
-            {(isAuthenticated && (user?.role === "admin" || user?.role === "superadmin")) && (
+            {(showAuthed && (user?.role === "admin" || user?.role === "superadmin")) && (
               <>
                 <Link
                   href="/admin/dashboard"
@@ -129,7 +130,7 @@ export function MobileNav() {
               </>
             )}
 
-            {isAuthenticated && user?.role === "seller" && (
+            {showAuthed && user?.role === "seller" && (
               <>
                 <Link
                   href="/seller/dashboard"
@@ -155,7 +156,7 @@ export function MobileNav() {
               </>
             )}
 
-            {!isAuthenticated && (
+            {!showAuthed && (
               <div className="flex flex-col gap-2 mt-4">
                 <Button asChild className="w-full">
                   <Link href="/login" onClick={() => setOpen(false)}>

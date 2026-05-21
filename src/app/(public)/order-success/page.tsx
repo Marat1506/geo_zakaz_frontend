@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Clock, MapPin } from 'lucide-react';
+import { CheckCircle, Clock, MapPin, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { apiClient } from '@/lib/api/client';
 import { Order } from '@/types/order';
@@ -13,8 +13,9 @@ function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get('orderId');
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!orderId) {
@@ -22,15 +23,16 @@ function OrderSuccessContent() {
       return;
     }
 
-    apiClient.get<Order>(`/orders/${orderId}`)
-      .then(res => res.data)
-      .then(data => {
-        setOrder(data);
-        setLoading(false);
+    apiClient
+      .get<Order>(`/orders/${orderId}`)
+      .then((res) => {
+        setOrder(res.data);
+        setLoadError(null);
       })
       .catch(() => {
-        setLoading(false);
-      });
+        setLoadError('Could not load order details. Your order may still have been placed.');
+      })
+      .finally(() => setLoading(false));
   }, [orderId, router]);
 
   if (loading) {
@@ -39,6 +41,27 @@ function OrderSuccessContent() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mx-auto"></div>
           <p className="mt-4 text-lg text-gray-600">Loading order details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError && !order) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 py-12 px-4">
+        <div className="container mx-auto max-w-2xl">
+          <Card className="shadow-2xl border-4 border-amber-300">
+            <CardHeader className="text-center py-8">
+              <AlertCircle className="h-16 w-16 text-amber-600 mx-auto mb-4" />
+              <CardTitle className="text-2xl">Order submitted</CardTitle>
+              <p className="text-gray-600 mt-2">{loadError}</p>
+            </CardHeader>
+            <CardContent className="pb-8 text-center">
+              <Link href="/">
+                <Button className="w-full h-12">Return to Home</Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -55,7 +78,7 @@ function OrderSuccessContent() {
             <CardTitle className="text-3xl font-bold">Order Placed Successfully!</CardTitle>
             <p className="text-lg mt-2">Thank you for your order</p>
           </CardHeader>
-          
+
           <CardContent className="p-8 space-y-6">
             {order && (
               <>
@@ -68,7 +91,9 @@ function OrderSuccessContent() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Total Amount:</span>
-                      <span className="font-bold text-orange-600 text-xl">${Number(order.totalAmount).toFixed(2)}</span>
+                      <span className="font-bold text-orange-600 text-xl">
+                        ${Number(order.totalAmount).toFixed(2)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Status:</span>
@@ -83,7 +108,7 @@ function OrderSuccessContent() {
                     <h3 className="text-xl font-bold text-blue-600">Estimated Time</h3>
                   </div>
                   <p className="text-2xl font-bold text-gray-900">{order.estimatedTime} minutes</p>
-                  <p className="text-sm text-gray-600 mt-1">We'll bring your order to your car</p>
+                  <p className="text-sm text-gray-600 mt-1">We&apos;ll bring your order to your car</p>
                 </div>
 
                 <div className="bg-purple-50 p-6 rounded-lg border-2 border-purple-200">
@@ -92,9 +117,13 @@ function OrderSuccessContent() {
                     <h3 className="text-xl font-bold text-purple-600">Your Car</h3>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-gray-900"><span className="font-semibold">Plate:</span> {order.carPlateNumber}</p>
+                    <p className="text-gray-900">
+                      <span className="font-semibold">Plate:</span> {order.carPlateNumber}
+                    </p>
                     {order.parkingSpot && (
-                      <p className="text-gray-900"><span className="font-semibold">Parking:</span> {order.parkingSpot}</p>
+                      <p className="text-gray-900">
+                        <span className="font-semibold">Parking:</span> {order.parkingSpot}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -102,10 +131,19 @@ function OrderSuccessContent() {
                 <div className="bg-yellow-50 p-6 rounded-lg border-2 border-yellow-300">
                   <h3 className="text-lg font-bold text-yellow-700 mb-2">Order Items</h3>
                   <div className="space-y-2">
-                    {order.items?.map((item: any) => (
-                      <div key={item.id} className="flex justify-between">
-                        <span className="text-gray-700">{item.quantity}x {item.menuItemName}</span>
-                        <span className="font-semibold text-gray-900">${Number(item.subtotal).toFixed(2)}</span>
+                    {order.items?.map((item) => (
+                      <div key={item.id} className="flex justify-between gap-2">
+                        <span className="text-gray-700">
+                          {item.quantity}x {item.menuItemName}
+                          {item.specialInstructions ? (
+                            <span className="block text-xs text-gray-500 italic">
+                              Note: {item.specialInstructions}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="font-semibold text-gray-900 shrink-0">
+                          ${Number(item.subtotal).toFixed(2)}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -120,7 +158,7 @@ function OrderSuccessContent() {
                 </Button>
               </Link>
               <p className="text-center text-sm text-gray-600 font-medium italic">
-                We'll notify you when your order is ready for pickup
+                We&apos;ll notify you when your order is ready for pickup
               </p>
             </div>
           </CardContent>
@@ -132,14 +170,16 @@ function OrderSuccessContent() {
 
 export default function OrderSuccessPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-500 mx-auto"></div>
+            <p className="mt-4 text-lg text-gray-600">Loading...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <OrderSuccessContent />
     </Suspense>
   );

@@ -1,6 +1,7 @@
 import { HttpError } from '@/lib/api/http-error';
+import { getApiBaseUrl } from '@/lib/api/get-api-base-url';
+import { handleSessionExpired } from '@/lib/api/session-expired';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 const REQUEST_TIMEOUT_MS = 15_000;
 
 let memoryAccessToken: string | null = null;
@@ -25,7 +26,7 @@ export function clearTokens(): void {
 }
 
 function joinApiUrl(path: string): string {
-  const base = API_BASE_URL.replace(/\/$/, '');
+  const base = getApiBaseUrl().replace(/\/$/, '');
   const p = path.startsWith('/') ? path : `/${path}`;
   return `${base}${p}`;
 }
@@ -67,20 +68,10 @@ async function refreshSession(): Promise<boolean> {
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken: getRefreshToken() ?? undefined }),
       credentials: 'include',
       signal: timeoutSignal(REQUEST_TIMEOUT_MS),
     });
-    if (!res.ok) return false;
-    const data = (await parseJsonBody(res)) as {
-      accessToken?: string;
-      refreshToken?: string;
-    };
-    if (data.accessToken && data.refreshToken) {
-      setTokens(data.accessToken, data.refreshToken);
-      return true;
-    }
-    return false;
+    return res.ok;
   } catch {
     return false;
   }
@@ -142,10 +133,7 @@ async function requestJson<T>(
     if (refreshed) {
       return requestJson<T>(method, path, body, true);
     }
-    clearTokens();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
+    await handleSessionExpired();
     const errData = await parseJsonBody(res);
     throw new HttpError(res.status, errData);
   }
@@ -170,8 +158,7 @@ async function requestJson<T>(
 }
 
 /**
- * Fetch-based HTTP client (cookies + Bearer token + refresh on 401).
- * Same `{ data }` shape as before so TanStack Query hooks stay unchanged.
+ * Fetch-based HTTP client (cookies + optional Bearer + refresh on 401).
  */
 export const apiClient = {
   get: async <T>(url: string) => ({

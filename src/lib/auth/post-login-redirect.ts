@@ -25,15 +25,7 @@ export function resolvePostLoginRedirect(
   return CUSTOMER_HOME;
 }
 
-/** When sending unauthenticated users to login, avoid returning them to account-only pages. */
+/** Preserve destination when sending unauthenticated users to login. */
 export function loginRedirectParam(pathname: string): string {
-  if (
-    pathname === '/profile' ||
-    pathname.startsWith('/profile/') ||
-    pathname === '/orders' ||
-    pathname.startsWith('/orders/')
-  ) {
-    return CUSTOMER_HOME;
-  }
-  return pathname;
+  return pathname.startsWith('/') ? pathname : CUSTOMER_HOME;
 }

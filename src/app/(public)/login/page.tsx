@@ -12,12 +12,9 @@ import Link from 'next/link';
 import { LogIn } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, Suspense, useState } from 'react';
-import { useAuthStore } from '@/lib/store/auth-store';
 import { FaceScanner } from '@/components/face/FaceScanner';
 import { cn } from '@/lib/utils/cn';
 import { preloadFaceModels } from '@/lib/face/preload';
-import { resolvePostLoginRedirect } from '@/lib/auth/post-login-redirect';
-
 function apiErrorMessage(error: unknown): string {
   if (typeof error !== 'object' || error === null) return '';
   const ax = error as { response?: { data?: { message?: string | string[] } } };
@@ -29,7 +26,6 @@ function apiErrorMessage(error: unknown): string {
 
 function LoginForm() {
   const searchParams = useSearchParams();
-  const { user } = useAuthStore();
   const redirectParam = searchParams.get('redirect');
   const login = useLogin(redirectParam ?? undefined);
   const faceLogin = useFaceLogin(redirectParam ?? undefined);
@@ -38,12 +34,6 @@ function LoginForm() {
   useEffect(() => {
     preloadFaceModels().catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const target = resolvePostLoginRedirect(redirectParam, user.role);
-    window.location.replace(target);
-  }, [user, redirectParam]);
 
   const {
     register,

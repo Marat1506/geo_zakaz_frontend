@@ -9,6 +9,7 @@ import { CheckCircle, Clock, Package, Truck, MapPin, Loader2, XCircle, ArrowLeft
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
 import { playSound } from '@/lib/utils/sounds';
+import { getBackendOrigin } from '@/lib/api/get-backend-origin';
 
 const statusConfig: Record<string, { label: string; icon: any; color: string; ring: string }> = {
   pending_payment: { label: 'Awaiting payment', icon: Clock, color: 'bg-yellow-400', ring: 'ring-yellow-300' },
@@ -38,8 +39,11 @@ export default function OrderTrackingPage({ params }: { params: { orderId: strin
 
     let socket: any;
     import('socket.io-client').then(({ io }) => {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-      socket = io(`${backendUrl}/notifications`, { transports: ['websocket'] });
+      const backendUrl = getBackendOrigin();
+      socket = io(`${backendUrl}/notifications`, {
+        transports: ['websocket'],
+        withCredentials: true,
+      });
       socketRef.current = socket;
 
       socket.on('connect', () => {

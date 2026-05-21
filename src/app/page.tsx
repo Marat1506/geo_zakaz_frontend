@@ -27,21 +27,24 @@ const ZonesMap = dynamic(() => import('@/components/map/zones-map').then((m) => 
 
 export default function HomePage() {
   const { data: zones = [], isLoading } = usePublicZones();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, authReady } = useAuthStore();
   const { addItem, items } = useCartStore();
   const { zoneId: currentZoneId, inServiceZone } = useGeoStore();
   const checkLocation = useCheckLocation();
   const router = useRouter();
   const cartCount = items.reduce((s, i) => s + i.quantity, 0);
 
-  // Redirect admin/seller to their dashboards
+  const showAuthed = authReady && isAuthenticated && user;
+
+  // Redirect admin/seller to their dashboards (after session bootstrap)
   useEffect(() => {
+    if (!authReady) return;
     if (user?.role === 'admin' || user?.role === 'superadmin') {
       router.replace('/admin/dashboard');
     } else if (user?.role === 'seller') {
       router.replace('/seller/dashboard');
     }
-  }, [user, router]);
+  }, [authReady, user, router]);
 
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -218,7 +221,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-white drop-shadow">🍔 LotFood</h1>
           <div className="flex items-center gap-2">
-            {user ? (
+            {showAuthed ? (
               <Link href="/profile">
                 <Button variant="outline" className="min-h-[48px] bg-white hover:bg-yellow-50 border-2 border-white px-3 gap-2">
                   <User className="h-5 w-5 text-orange-600" />

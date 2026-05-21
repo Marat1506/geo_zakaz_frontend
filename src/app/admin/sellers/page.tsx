@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { toast } from '@/components/ui/toast';
 import { Plus, ShieldOff, ShieldCheck, Users, Check, X, FileText, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 import { getImageUrl } from '@/lib/utils/image';
+import { getApiBaseUrl } from '@/lib/api/get-api-base-url';
 
 interface CreateSellerFormData {
   email: string;
@@ -16,19 +17,13 @@ interface CreateSellerFormData {
   password: string;
 }
 
-/** Seller docs in DB are often full http://localhost:3000/uploads/... from dev registration. */
+/** KYC docs are served via authenticated /api/files/seller-docs/... */
 function resolveSellerDocUrl(url: string): string {
-  const uploadsIdx = url.indexOf('/uploads/');
-  if (uploadsIdx === -1) {
-    return getImageUrl(url) || url;
+  const match = url.match(/\/uploads\/seller-docs\/([^/?#]+)/i);
+  if (match) {
+    return `${getApiBaseUrl()}/files/seller-docs/${match[1]}`;
   }
-  const path = url.slice(uploadsIdx);
-  const base =
-    (typeof window !== 'undefined' ? window.location.origin : null) ||
-    process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, '') ||
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/api\/?$/, '') ||
-    'https://lotfood.ru';
-  return `${base}${path}`;
+  return getImageUrl(url) || url;
 }
 
 function DocImage({ url, label }: { url: string; label: string }) {
@@ -37,7 +32,11 @@ function DocImage({ url, label }: { url: string; label: string }) {
     <div className="space-y-1">
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
       <a href={src} target="_blank" rel="noopener noreferrer">
-        <img src={src} alt={label} className="h-32 w-full object-cover rounded-lg border hover:opacity-90 transition-opacity cursor-pointer" />
+        <img
+          src={src}
+          alt={label}
+          className="h-32 w-full object-cover rounded-lg border hover:opacity-90 transition-opacity cursor-pointer"
+        />
       </a>
     </div>
   );

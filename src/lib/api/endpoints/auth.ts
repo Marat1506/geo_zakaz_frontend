@@ -10,8 +10,8 @@ import {
 
 /** Raw NestJS auth JSON shapes */
 interface LoginFaceAuthResponse {
-  accessToken: string;
-  refreshToken: string;
+  accessToken: string | null;
+  refreshToken: string | null;
   user: User;
 }
 
@@ -22,30 +22,23 @@ interface RegisterRawResponse {
   requiresEmailVerification?: boolean;
 }
 
-interface RefreshRawResponse {
-  accessToken: string;
-  refreshToken: string;
+function toTokens(
+  accessToken: string | null | undefined,
+  refreshToken: string | null | undefined,
+): AuthTokens {
+  return {
+    accessToken: accessToken ?? '',
+    refreshToken: refreshToken ?? '',
+  };
 }
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<{ user: User; tokens: AuthTokens }> => {
-    console.log('Sending login request with:', credentials);
-    try {
-      const { data } = await apiClient.post<LoginFaceAuthResponse>('/auth/login', credentials);
-      console.log('Login response:', data);
-      // Backend returns { accessToken, refreshToken, user }
-      // Transform to { user, tokens: { accessToken, refreshToken } }
-      return {
-        user: data.user,
-        tokens: {
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-        },
-      };
-    } catch (error: unknown) {
-      console.error('Login error:', error);
-      throw error;
-    }
+    const { data } = await apiClient.post<LoginFaceAuthResponse>('/auth/login', credentials);
+    return {
+      user: data.user,
+      tokens: toTokens(data.accessToken, data.refreshToken),
+    };
   },
 
   register: async (userData: RegisterData & {
@@ -53,14 +46,21 @@ export const authApi = {
     passportRegistration?: File;
     selfie?: File;
   }): Promise<RegisterApiResponse> => {
+    const raw = userData as RegisterData & {
+      confirmPassword?: string;
+      passportMain?: File;
+      passportRegistration?: File;
+      selfie?: File;
+      faceDescriptors?: number[][];
+    };
     const {
-      confirmPassword: _,
+      confirmPassword: _cp,
       passportMain,
       passportRegistration,
       selfie,
       faceDescriptors,
       ...payload
-    } = userData as any;
+    } = raw;
 
     const formData = new FormData();
     Object.entries(payload).forEach(([key, value]) => {
@@ -73,14 +73,10 @@ export const authApi = {
     if (passportRegistration) formData.append('passportRegistration', passportRegistration);
     if (selfie) formData.append('selfie', selfie);
 
-    // multipart/form-data boundary is set automatically by the browser for FormData.
     const { data } = await apiClient.post<RegisterRawResponse>('/auth/register', formData);
     return {
       user: data.user,
-      tokens: {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      },
+      tokens: toTokens(data.accessToken, data.refreshToken),
       requiresEmailVerification: !!data.requiresEmailVerification,
     };
   },
@@ -95,10 +91,7 @@ export const authApi = {
     });
     return {
       user: data.user,
-      tokens: {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      },
+      tokens: toTokens(data.accessToken, data.refreshToken),
     };
   },
 
@@ -108,9 +101,8 @@ export const authApi = {
     });
   },
 
-  refresh: async (refreshToken: string): Promise<AuthTokens> => {
-    const { data } = await apiClient.post<RefreshRawResponse>('/auth/refresh', { refreshToken });
-    return data;
+  refresh: async (): Promise<void> => {
+    await apiClient.post('/auth/refresh');
   },
 
   logout: async (): Promise<void> => {
@@ -145,10 +137,7 @@ export const authApi = {
     const { data } = await apiClient.post<LoginFaceAuthResponse>('/auth/face/login', body);
     return {
       user: data.user,
-      tokens: {
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      },
+      tokens: toTokens(data.accessToken, data.refreshToken),
     };
   },
 };

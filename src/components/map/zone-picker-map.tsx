@@ -111,7 +111,7 @@ export function ZonePickerMap({
         className="w-full h-[400px] rounded-lg border border-gray-300 dark:border-gray-700"
       />
       <p className="text-sm text-gray-600 dark:text-gray-400">
-        Click on the map to select the center of your delivery zone
+        Zone center is set from your device location (map is read-only)
       </p>
     </div>
   );

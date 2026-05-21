@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Circle, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Circle, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+const DEFAULT_CENTER: [number, number] = [47.2357, 39.7015];
 
 interface DeliveryZone {
   id: string;
@@ -19,11 +21,18 @@ interface DeliveryZoneMapProps {
   height?: string;
 }
 
+function MapRecenter({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, zoom, { animate: true });
+  }, [center, zoom, map]);
+  return null;
+}
+
 export function DeliveryZoneMap({ zones, userLocation, height = '400px' }: DeliveryZoneMapProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Fix for default marker icons in Leaflet (must run client-side only)
     delete (L.Icon.Default.prototype as any)._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -35,7 +44,7 @@ export function DeliveryZoneMap({ zones, userLocation, height = '400px' }: Deliv
 
   if (!mounted) {
     return (
-      <div 
+      <div
         className="flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg"
         style={{ height }}
       >
@@ -44,33 +53,35 @@ export function DeliveryZoneMap({ zones, userLocation, height = '400px' }: Deliv
     );
   }
 
-  // Calculate center point (use first zone or user location)
-  const defaultCenter: [number, number] = zones.length > 0 
-    ? [zones[0].centerLat, zones[0].centerLng]
-    : [40.7128, -74.0060]; // Default to NYC
+  const defaultCenter: [number, number] =
+    zones.length > 0 ? [zones[0].centerLat, zones[0].centerLng] : DEFAULT_CENTER;
 
-  const center: [number, number] = userLocation 
+  const center: [number, number] = userLocation
     ? [userLocation.lat, userLocation.lng]
     : defaultCenter;
 
+  const zoom = userLocation ? 15 : zones.length > 0 ? 13 : 11;
+
   return (
-    <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height }}>
+    <div
+      className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+      style={{ height }}
+    >
       <MapContainer
         center={center}
-        zoom={13}
+        zoom={zoom}
         style={{ height: '100%', width: '100%' }}
         scrollWheelZoom
         zoomControl
         doubleClickZoom
         dragging
       >
-        {/* OpenStreetMap tiles (free, no API key needed) */}
+        <MapRecenter center={center} zoom={zoom} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {/* Delivery zones */}
         {zones.map((zone) => (
           <Circle
             key={zone.id}
@@ -94,7 +105,6 @@ export function DeliveryZoneMap({ zones, userLocation, height = '400px' }: Deliv
           </Circle>
         ))}
 
-        {/* User location marker */}
         {userLocation && (
           <Marker position={[userLocation.lat, userLocation.lng]}>
             <Popup>

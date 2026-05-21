@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { apiClient } from '@/lib/api/client';
+import { loginRedirectParam } from '@/lib/auth/post-login-redirect';
 
 const statusConfig: Record<string, { label: string; icon: any; color: string; bg: string }> = {
   pending_payment: { label: 'Awaiting payment', icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-100' },
@@ -40,7 +41,9 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
-    if (!user) router.push('/login?redirect=/');
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(loginRedirectParam('/profile'))}`);
+    }
   }, [user, router]);
 
   useEffect(() => {

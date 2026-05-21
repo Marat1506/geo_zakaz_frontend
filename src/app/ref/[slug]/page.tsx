@@ -141,7 +141,9 @@ export default function ReferralPage() {
 
   const loadSeller = async () => {
     try {
-      const response = await apiClient.get<SellerInfo>(`/auth/seller/slug/${slug}`);
+      const response = await apiClient.get<SellerInfo>(
+        `/auth/seller/slug/${slug}?track=1`,
+      );
       setSeller(response.data);
     } catch (err: unknown) {
       setError(getApiErrorMessage(err, 'Seller not found'));

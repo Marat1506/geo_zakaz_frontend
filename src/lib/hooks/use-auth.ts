@@ -83,7 +83,7 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: () => authApi.logout(),
-    onSuccess: () => {
+    onSettled: () => {
       clearAuth();
       queryClient.clear();
       router.push('/login');
@@ -92,13 +92,13 @@ export function useLogout() {
 }
 
 export function useCurrentUser() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, authReady } = useAuthStore();
 
   return useQuery({
     queryKey: ['currentUser'],
     queryFn: () => authApi.getCurrentUser(),
-    enabled: isAuthenticated,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: authReady && isAuthenticated,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

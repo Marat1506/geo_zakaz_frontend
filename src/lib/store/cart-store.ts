@@ -86,7 +86,7 @@ export const useCartStore = create<CartState>()(
       },
 
       clearCart: () => {
-        set({ items: [], subtotal: 0, tax: 0, total: 0 });
+        set({ items: [], subtotal: 0, tax: 0, deliveryFee: DELIVERY_FEE, total: 0 });
       },
 
       calculateTotals: () => {

@@ -23,7 +23,8 @@ interface HeaderProps {
 
 export function Header({ sellerInfo }: HeaderProps = {}) {
   const pathname = usePathname()
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, user, authReady } = useAuthStore()
+  const showAuthed = authReady && isAuthenticated && user
   const items = useCartStore((state) => state.items)
   const cartItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const isCustomer = user?.role === "customer"
@@ -98,7 +99,7 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
         </nav>
 
         <div className="flex items-center gap-2 ml-auto shrink-0 max-w-[55vw] sm:max-w-none overflow-x-auto">
-          {isAuthenticated && (
+          {showAuthed && (
             <>
               <Link href="/cart">
                 <Button variant="outline" size="icon" className="relative min-h-[44px] min-w-[44px] bg-white hover:bg-yellow-50 border-2 border-white" aria-label="Cart">
@@ -147,7 +148,7 @@ export function Header({ sellerInfo }: HeaderProps = {}) {
             </>
           )}
 
-          {!isAuthenticated && (
+          {!showAuthed && (
             <>
               <Link href={loginHref}>
                 <Button variant="outline" className="bg-white hover:bg-yellow-50 border-2 border-white text-orange-600 min-h-[44px] gap-2">
